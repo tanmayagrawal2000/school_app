@@ -1,0 +1,425 @@
+{
+  "@@locale": "en",
+
+  "appName": "SGM International School",
+  "@appName": { "description": "Application name" },
+
+  "schoolName": "SGM International School",
+  "@schoolName": {},
+
+  "schoolLocation": "Indira Nagar, Kanpur",
+  "@schoolLocation": {},
+
+  "schoolAffiliation": "CBSE Affiliated",
+  "@schoolAffiliation": {},
+
+  "schoolMotto": "उत्तिष्ठत जाग्रत प्राप्य वरान्निबोधत",
+  "@schoolMotto": {},
+
+  "loginWelcome": "Welcome Back",
+  "@loginWelcome": {},
+
+  "loginSubtitle": "Sign in to continue",
+  "@loginSubtitle": {},
+
+  "loginAdmissionNumber": "Admission Number",
+  "@loginAdmissionNumber": {},
+
+  "loginEmployeeId": "Employee ID",
+  "@loginEmployeeId": {},
+
+  "loginParentId": "Parent ID / Mobile",
+  "@loginParentId": {},
+
+  "loginAdmissionHint": "e.g. SGM/2024/001",
+  "@loginAdmissionHint": {},
+
+  "loginEmployeeHint": "e.g. SGM/T/001",
+  "@loginEmployeeHint": {},
+
+  "loginParentHint": "e.g. 98765XXXXX",
+  "@loginParentHint": {},
+
+  "loginPassword": "Password",
+  "@loginPassword": {},
+
+  "loginPasswordHint": "Enter your password",
+  "@loginPasswordHint": {},
+
+  "loginForgotPassword": "Forgot Password?",
+  "@loginForgotPassword": {},
+
+  "loginSignIn": "Sign In",
+  "@loginSignIn": {},
+
+  "loginDemoHint": "Demo: Use any ID & password",
+  "@loginDemoHint": {},
+
+  "roleStudent": "Student",
+  "@roleStudent": {},
+
+  "roleTeacher": "Teacher",
+  "@roleTeacher": {},
+
+  "roleParent": "Parent",
+  "@roleParent": {},
+
+  "navHome": "Home",
+  "@navHome": {},
+
+  "navStudents": "Students",
+  "@navStudents": {},
+
+  "navBus": "Bus",
+  "@navBus": {},
+
+  "navTimetable": "Timetable",
+  "@navTimetable": {},
+
+  "homeOverview": "Overview",
+  "@homeOverview": {},
+
+  "homeUpcomingEvents": "Upcoming Events",
+  "@homeUpcomingEvents": {},
+
+  "homeNoUpcomingEvents": "No upcoming events soon",
+  "@homeNoUpcomingEvents": {},
+
+  "homeStatTotalStudents": "Total Students",
+  "@homeStatTotalStudents": {},
+
+  "homeStatTeachers": "Teachers",
+  "@homeStatTeachers": {},
+
+  "homeStatAttendanceToday": "Attendance Today",
+  "@homeStatAttendanceToday": {},
+
+  "homeStatBusesOnRoute": "Buses On Route",
+  "@homeStatBusesOnRoute": {},
+
+  "homeStatMyAttendance": "My Attendance",
+  "@homeStatMyAttendance": {},
+
+  "homeStatTodayPeriods": "Today's Periods",
+  "@homeStatTodayPeriods": {},
+
+  "homeStatUpcomingExams": "Upcoming Exams",
+  "@homeStatUpcomingExams": {},
+
+  "homeMyTeachers": "My Teachers",
+  "@homeMyTeachers": {},
+
+  "homeClassTeacher": "Class Teacher",
+  "@homeClassTeacher": {},
+
+  "homeQuickAccess": "Quick Access",
+  "@homeQuickAccess": {},
+
+  "quickResults": "Results",
+  "@quickResults": {},
+
+  "quickTimetable": "Timetable",
+  "@quickTimetable": {},
+
+  "quickAttendance": "Attendance",
+  "@quickAttendance": {},
+
+  "quickFees": "Fees",
+  "@quickFees": {},
+
+  "quickHomework": "Homework",
+  "@quickHomework": {},
+
+  "quickAchievements": "Achievements",
+  "@quickAchievements": {},
+
+  "homeAnnouncements": "Announcements",
+  "@homeAnnouncements": {},
+
+  "homeViewAll": "View All",
+  "@homeViewAll": {},
+
+  "greetingMorning": "Good Morning",
+  "@greetingMorning": {},
+
+  "greetingAfternoon": "Good Afternoon",
+  "@greetingAfternoon": {},
+
+  "greetingEvening": "Good Evening",
+  "@greetingEvening": {},
+
+  "announcementPinned": "PINNED",
+  "@announcementPinned": {},
+
+  "announcementNew": "NEW",
+  "@announcementNew": {},
+
+  "announcementTypeExam": "Exam",
+  "@announcementTypeExam": {},
+
+  "announcementTypeHoliday": "Holiday",
+  "@announcementTypeHoliday": {},
+
+  "announcementTypeEvent": "Event",
+  "@announcementTypeEvent": {},
+
+  "announcementTypeFee": "Fee",
+  "@announcementTypeFee": {},
+
+  "announcementTypeSports": "Sports",
+  "@announcementTypeSports": {},
+
+  "announcementTypeGeneral": "General",
+  "@announcementTypeGeneral": {},
+
+  "announcementsTitle": "Announcements",
+  "@announcementsTitle": {},
+
+  "announcementsAllCaughtUp": "All caught up!",
+  "@announcementsAllCaughtUp": {},
+
+  "announcementsNone": "No announcements",
+  "@announcementsNone": {},
+
+  "announcementsUnreadCount": "{count} unread",
+  "@announcementsUnreadCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "filterAll": "All",
+  "@filterAll": {},
+
+  "filterUnread": "Unread",
+  "@filterUnread": {},
+
+  "studentsTitle": "Students",
+  "@studentsTitle": {},
+
+  "studentsSearchHint": "Search by name, class or admission no.",
+  "@studentsSearchHint": {},
+
+  "studentsNoneFound": "No students found",
+  "@studentsNoneFound": {},
+
+  "busTitle": "Bus Tracking",
+  "@busTitle": {},
+
+  "busFetchingLocation": "Fetching live bus location...",
+  "@busFetchingLocation": {},
+
+  "busLive": "LIVE",
+  "@busLive": {},
+
+  "busStatusOnRoute": "On Route",
+  "@busStatusOnRoute": {},
+
+  "busStatusAtStop": "At Stop",
+  "@busStatusAtStop": {},
+
+  "busStatusCompleted": "Completed",
+  "@busStatusCompleted": {},
+
+  "busDriver": "Driver",
+  "@busDriver": {},
+
+  "busContact": "Contact",
+  "@busContact": {},
+
+  "busEta": "ETA",
+  "@busEta": {},
+
+  "busNextStop": "Next Stop",
+  "@busNextStop": {},
+
+  "timetableTitle": "Timetable",
+  "@timetableTitle": {},
+
+  "attendanceTitle": "Attendance",
+  "@attendanceTitle": {},
+
+  "attendanceOverall": "Overall",
+  "@attendanceOverall": {},
+
+  "attendanceGoodStanding": "Good Standing",
+  "@attendanceGoodStanding": {},
+
+  "attendanceLow": "Attendance Low",
+  "@attendanceLow": {},
+
+  "attendanceGoodMessage": "Keep it up! Maintain above 75%.",
+  "@attendanceGoodMessage": {},
+
+  "attendanceLowMessage": "Below 75% — attendance at risk.",
+  "@attendanceLowMessage": {},
+
+  "attendancePresent": "Present",
+  "@attendancePresent": {},
+
+  "attendanceAbsent": "Absent",
+  "@attendanceAbsent": {},
+
+  "attendanceLate": "Late",
+  "@attendanceLate": {},
+
+  "attendanceWorkingDays": "Working Days",
+  "@attendanceWorkingDays": {},
+
+  "attendanceAbsentDates": "Absent Dates",
+  "@attendanceAbsentDates": {},
+
+  "resultsScreenTitle": "{firstName}'s Results",
+  "@resultsScreenTitle": {
+    "placeholders": {
+      "firstName": { "type": "String" }
+    }
+  },
+
+  "resultsTitle": "Academic Performance",
+  "@resultsTitle": {},
+
+  "resultsSession": "Session 2024–25",
+  "@resultsSession": {},
+
+  "resultsGrade": "Grade",
+  "@resultsGrade": {},
+
+  "resultsScore": "Score",
+  "@resultsScore": {},
+
+  "resultsClassRank": "Class Rank",
+  "@resultsClassRank": {},
+
+  "resultsClassAvgValue": "Class avg: {value}",
+  "@resultsClassAvgValue": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+
+  "resultsYou": "You",
+  "@resultsYou": {},
+
+  "resultsClassAvg": "Class Avg",
+  "@resultsClassAvg": {},
+
+  "resultsSubjectPerformance": "Subject-wise Performance",
+  "@resultsSubjectPerformance": {},
+
+  "resultsDetailedMarks": "Detailed Marks",
+  "@resultsDetailedMarks": {},
+
+  "resultsSubjectHeader": "Subject",
+  "@resultsSubjectHeader": {},
+
+  "resultsMarksHeader": "Marks",
+  "@resultsMarksHeader": {},
+
+  "resultsGradeHeader": "Grade",
+  "@resultsGradeHeader": {},
+
+  "homeworkTitle": "Homework",
+  "@homeworkTitle": {},
+
+  "homeworkStatTotal": "Total",
+  "@homeworkStatTotal": {},
+
+  "homeworkStatPending": "Pending",
+  "@homeworkStatPending": {},
+
+  "homeworkStatSubmitted": "Submitted",
+  "@homeworkStatSubmitted": {},
+
+  "homeworkStatOverdue": "Overdue",
+  "@homeworkStatOverdue": {},
+
+  "homeworkEmpty": "No homework",
+  "@homeworkEmpty": {},
+
+  "homeworkEmptyPending": "No pending homework",
+  "@homeworkEmptyPending": {},
+
+  "homeworkEmptySubmitted": "No submitted homework",
+  "@homeworkEmptySubmitted": {},
+
+  "homeworkSubmitted": "Submitted",
+  "@homeworkSubmitted": {},
+
+  "homeworkPriorityHigh": "High Priority",
+  "@homeworkPriorityHigh": {},
+
+  "homeworkPriorityMedium": "Medium",
+  "@homeworkPriorityMedium": {},
+
+  "homeworkPriorityLow": "Low",
+  "@homeworkPriorityLow": {},
+
+  "homeworkOverdue": "Overdue · {date}",
+  "@homeworkOverdue": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+
+  "homeworkDue": "Due {date}",
+  "@homeworkDue": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+
+  "feesTitle": "Fee Details",
+  "@feesTitle": {},
+
+  "feesAdmissionNo": "Admission No: {admissionNo}",
+  "@feesAdmissionNo": {
+    "placeholders": {
+      "admissionNo": { "type": "String" }
+    }
+  },
+
+  "feesSession": "Session 2025–26",
+  "@feesSession": {},
+
+  "feesInstallmentDetails": "Installment Details",
+  "@feesInstallmentDetails": {},
+
+  "feesStatusPaid": "Paid",
+  "@feesStatusPaid": {},
+
+  "feesStatusPending": "Pending",
+  "@feesStatusPending": {},
+
+  "feesStatusOverdue": "Overdue",
+  "@feesStatusOverdue": {},
+
+  "feesStatusPartial": "Partial",
+  "@feesStatusPartial": {},
+
+  "feesTotalFee": "Total Fee",
+  "@feesTotalFee": {},
+
+  "feesPaid": "Paid",
+  "@feesPaid": {},
+
+  "feesBalance": "Balance",
+  "@feesBalance": {},
+
+  "feesDue": "Due: {date}",
+  "@feesDue": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+
+  "feesPaidDate": "Paid: {date}",
+  "@feesPaidDate": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+
+  "achievementsTitle": "My Achievements",
+  "@achievementsTitle": {}
+}
