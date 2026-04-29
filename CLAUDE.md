@@ -44,24 +44,105 @@ All data is currently served from in-memory dummy data — there is no live netw
 lib/
 ├── main.dart                          # Portrait lock, status bar style, NotificationService.init()
 ├── app.dart                           # Root widget — wires repositories + BLoCs
+│
 ├── core/
-│   ├── error/app_exception.dart       # Typed exceptions (Network, Server, Auth, …)
+│   ├── enums/
+│   │   └── user_role.dart             # UserRole enum (student, parent, teacher)
+│   ├── error/
+│   │   └── app_exception.dart         # Typed exceptions (Network, Server, Auth, Parse, NotFound)
 │   ├── network/
 │   │   ├── api_client.dart            # HTTP client skeleton (activate by adding Dio)
-│   │   └── api_endpoints.dart         # All API path constants
-│   ├── enums/user_role.dart
-│   └── services/notification_service.dart
-└── data/
-    ├── models/                        # Equatable data classes with fromJson / toJson
-    ├── dummy/dummy_data.dart          # Single source of all in-memory data
-    └── repositories/
-        ├── student_repository.dart         ← abstract interface
-        ├── bus_repository.dart             ← abstract interface
-        ├── timetable_repository.dart       ← abstract interface
-        ├── homework_repository.dart        ← abstract interface
-        ├── announcement_repository.dart    ← abstract interface
-        ├── dummy/   ← DummyData-backed implementations (currently active)
-        └── api/     ← ApiClient-backed implementations (activate when backend is ready)
+│   │   └── api_endpoints.dart         # All API path constants + parameterised route methods
+│   ├── services/
+│   │   ├── auth_storage.dart          # SharedPreferences session persistence
+│   │   └── notification_service.dart  # flutter_local_notifications singleton
+│   └── theme/
+│       ├── app_colors.dart            # Full colour palette (semantic + brand)
+│       └── app_theme.dart             # MaterialTheme config (typography, card, appbar)
+│
+├── data/
+│   ├── dummy/
+│   │   └── dummy_data.dart            # Single source of all in-memory data + remindersForDay()
+│   ├── models/
+│   │   ├── announcement_model.dart    # AnnouncementModel, AnnouncementType enum
+│   │   ├── attendance_model.dart      # AttendanceRecord, AttendanceStatus enum
+│   │   ├── badge_model.dart           # BadgeModel (earned badges)
+│   │   ├── badge_type_model.dart      # BadgeType catalog
+│   │   ├── bus_model.dart             # BusRoute, BusStop, LatLng
+│   │   ├── class_reminder_model.dart  # ClassReminderModel, ReminderType enum
+│   │   ├── class_stats_model.dart     # ClassStats (average marks, rank distribution)
+│   │   ├── fee_model.dart             # FeeInstallment, FeeStatus enum
+│   │   ├── homework_model.dart        # HomeworkItem, HomeworkPriority enum
+│   │   ├── student_model.dart         # StudentModel (marks, attendance%, fee status)
+│   │   ├── subject_model.dart         # SubjectModel — single source of truth for color/icon
+│   │   ├── teacher_model.dart         # TeacherModel
+│   │   └── timetable_model.dart       # TimetableModel, TimetablePeriod
+│   └── repositories/
+│       ├── announcement_repository.dart   ← abstract interface
+│       ├── badge_repository.dart          ← abstract interface
+│       ├── bus_repository.dart            ← abstract interface
+│       ├── homework_repository.dart       ← abstract interface
+│       ├── student_repository.dart        ← abstract interface
+│       ├── timetable_repository.dart      ← abstract interface
+│       ├── dummy/                         # DummyData-backed implementations (currently active)
+│       │   ├── dummy_announcement_repository.dart
+│       │   ├── dummy_badge_repository.dart
+│       │   ├── dummy_bus_repository.dart
+│       │   ├── dummy_homework_repository.dart
+│       │   ├── dummy_student_repository.dart
+│       │   └── dummy_timetable_repository.dart
+│       └── api/                           # ApiClient-backed skeletons (activate when backend ready)
+│           ├── api_announcement_repository.dart
+│           ├── api_badge_repository.dart
+│           ├── api_bus_repository.dart
+│           ├── api_homework_repository.dart
+│           ├── api_student_repository.dart
+│           └── api_timetable_repository.dart
+│
+├── features/
+│   ├── achievements/
+│   │   ├── bloc/                      # BadgeBloc / BadgeEvent / BadgeState
+│   │   └── (view lives in home/view/achievements_screen.dart)
+│   ├── attendance/
+│   │   ├── bloc/                      # AttendanceBloc / AttendanceEvent / AttendanceState
+│   │   └── view/attendance_screen.dart
+│   ├── bus_tracking/
+│   │   ├── bloc/                      # BusBloc / BusEvent / BusState (Timer.periodic simulation)
+│   │   └── view/bus_tracking_screen.dart
+│   ├── fees/
+│   │   ├── bloc/                      # FeesBloc / FeesEvent / FeesState (local scope)
+│   │   └── view/fees_screen.dart
+│   ├── home/
+│   │   ├── bloc/                      # HomeBloc / HomeEvent / HomeState (global scope)
+│   │   └── view/
+│   │       ├── home_screen.dart           # IndexedStack bottom-nav shell
+│   │       ├── achievements_screen.dart   # Badge gallery
+│   │       ├── announcement_detail_screen.dart
+│   │       ├── announcements_list_screen.dart
+│   │       └── tomorrow_prep_screen.dart  # Tomorrow's timetable + reminders + due homework
+│   ├── homework/
+│   │   ├── bloc/                      # HomeworkBloc / HomeworkEvent / HomeworkState (local scope)
+│   │   └── view/homework_screen.dart
+│   ├── login/
+│   │   └── login_screen.dart
+│   ├── results/
+│   │   ├── bloc/                      # ResultsBloc / ResultsEvent / ResultsState (local scope)
+│   │   └── view/results_screen.dart
+│   ├── splash/
+│   │   └── splash_screen.dart
+│   ├── student/
+│   │   ├── bloc/                      # StudentBloc / StudentEvent / StudentState (global scope)
+│   │   └── view/
+│   │       ├── student_list_screen.dart   # Teacher-only tab
+│   │       └── student_detail_screen.dart
+│   └── timetable/
+│       ├── bloc/                      # TimetableBloc / TimetableEvent / TimetableState (global)
+│       └── view/timetable_screen.dart
+│
+└── l10n/
+    ├── app_en.arb                     # Source strings — edit this file to add/change strings
+    ├── app_localizations.dart         # Generated — do not edit manually
+    └── app_localizations_en.dart      # Generated — do not edit manually
 ```
 
 ### Switching from dummy data to a live API
