@@ -73,4 +73,10 @@ class ApiStudentRepository implements StudentRepository {
     final list = await _client.getList(ApiEndpoints.studentFees(studentId));
     return list.map(FeeInstallment.fromJson).toList();
   }
+
+  @override
+  Future<List<StudentModel>> fetchChildrenForParent(String parentId) async {
+    final list = await _client.getList(ApiEndpoints.parentChildren(parentId));
+    return list.map(StudentModel.fromJson).toList();
+  }
 }

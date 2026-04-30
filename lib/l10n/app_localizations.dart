@@ -262,6 +262,60 @@ abstract class AppLocalizations {
   /// **'No upcoming events soon'**
   String get homeNoUpcomingEvents;
 
+  /// No description provided for @homeParentMonitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Child Monitoring'**
+  String get homeParentMonitoring;
+
+  /// No description provided for @homeParentAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts'**
+  String get homeParentAlerts;
+
+  /// No description provided for @homeParentNoAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'All clear — no alerts.'**
+  String get homeParentNoAlerts;
+
+  /// No description provided for @homeParentGrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Grade'**
+  String get homeParentGrade;
+
+  /// No description provided for @homeParentFeeStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee Status'**
+  String get homeParentFeeStatus;
+
+  /// No description provided for @homeParentLowAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance below 75%'**
+  String get homeParentLowAttendance;
+
+  /// No description provided for @homeParentOverdueFees.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee payment pending'**
+  String get homeParentOverdueFees;
+
+  /// No description provided for @homeParentOverdueHomework.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} assignment(s) overdue'**
+  String homeParentOverdueHomework(int count);
+
+  /// No description provided for @homeParentChildTeachers.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s Teachers'**
+  String homeParentChildTeachers(String name);
+
   /// No description provided for @homeStatTotalStudents.
   ///
   /// In en, this message translates to:
@@ -873,6 +927,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'My Achievements'**
   String get achievementsTitle;
+
+  /// No description provided for @teacherMyClass.
+  ///
+  /// In en, this message translates to:
+  /// **'My Class'**
+  String get teacherMyClass;
+
+  /// No description provided for @teacherClassIncharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Class Incharge'**
+  String get teacherClassIncharge;
+
+  /// No description provided for @teacherClassHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Class Health'**
+  String get teacherClassHealth;
+
+  /// No description provided for @teacherClassAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance'**
+  String get teacherClassAttendance;
+
+  /// No description provided for @teacherAvgGrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg. Grade'**
+  String get teacherAvgGrade;
+
+  /// No description provided for @teacherPendingHW.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending HW'**
+  String get teacherPendingHW;
+
+  /// No description provided for @teacherSchoolOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'School Overview'**
+  String get teacherSchoolOverview;
+
+  /// No description provided for @teacherTakeAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance'**
+  String get teacherTakeAttendance;
+
+  /// No description provided for @teacherPostHomework.
+  ///
+  /// In en, this message translates to:
+  /// **'Post HW'**
+  String get teacherPostHomework;
+
+  /// No description provided for @teacherPostReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder'**
+  String get teacherPostReminder;
+
+  /// No description provided for @teacherSubmitAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Attendance'**
+  String get teacherSubmitAttendance;
+
+  /// No description provided for @teacherAttendanceSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance marked successfully!'**
+  String get teacherAttendanceSaved;
+
+  /// No description provided for @teacherHomeworkPosted.
+  ///
+  /// In en, this message translates to:
+  /// **'Homework posted for the class!'**
+  String get teacherHomeworkPosted;
+
+  /// No description provided for @teacherReminderPosted.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder sent to the class!'**
+  String get teacherReminderPosted;
+
+  /// No description provided for @teacherPostHomeworkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Post Homework'**
+  String get teacherPostHomeworkTitle;
+
+  /// No description provided for @teacherPostReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Post Reminder'**
+  String get teacherPostReminderTitle;
+
+  /// No description provided for @teacherSelectSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Subject'**
+  String get teacherSelectSubject;
+
+  /// No description provided for @teacherHomeworkTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get teacherHomeworkTitleLabel;
+
+  /// No description provided for @teacherHomeworkTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Exercise 4.3 – Quadratic Equations'**
+  String get teacherHomeworkTitleHint;
+
+  /// No description provided for @teacherHomeworkDescLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get teacherHomeworkDescLabel;
+
+  /// No description provided for @teacherHomeworkDescHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What students should do (optional)'**
+  String get teacherHomeworkDescHint;
+
+  /// No description provided for @teacherDueDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Due Date'**
+  String get teacherDueDateLabel;
+
+  /// No description provided for @teacherSelectDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Select due date'**
+  String get teacherSelectDueDate;
+
+  /// No description provided for @teacherPriorityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get teacherPriorityLabel;
+
+  /// No description provided for @teacherReminderMessageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get teacherReminderMessageLabel;
+
+  /// No description provided for @teacherReminderMessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the reminder here…'**
+  String get teacherReminderMessageHint;
+
+  /// No description provided for @teacherReminderTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder Type'**
+  String get teacherReminderTypeLabel;
 }
 
 class _AppLocalizationsDelegate

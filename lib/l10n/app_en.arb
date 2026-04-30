@@ -85,6 +85,37 @@
   "homeNoUpcomingEvents": "No upcoming events soon",
   "@homeNoUpcomingEvents": {},
 
+  "homeParentMonitoring": "Child Monitoring",
+  "@homeParentMonitoring": {},
+
+  "homeParentAlerts": "Alerts",
+  "@homeParentAlerts": {},
+
+  "homeParentNoAlerts": "All clear — no alerts.",
+  "@homeParentNoAlerts": {},
+
+  "homeParentGrade": "Grade",
+  "@homeParentGrade": {},
+
+  "homeParentFeeStatus": "Fee Status",
+  "@homeParentFeeStatus": {},
+
+  "homeParentLowAttendance": "Attendance below 75%",
+  "@homeParentLowAttendance": {},
+
+  "homeParentOverdueFees": "Fee payment pending",
+  "@homeParentOverdueFees": {},
+
+  "homeParentOverdueHomework": "{count} assignment(s) overdue",
+  "@homeParentOverdueHomework": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "homeParentChildTeachers": "{name}'s Teachers",
+  "@homeParentChildTeachers": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+
   "homeStatTotalStudents": "Total Students",
   "@homeStatTotalStudents": {},
 
@@ -421,5 +452,86 @@
   },
 
   "achievementsTitle": "My Achievements",
-  "@achievementsTitle": {}
+  "@achievementsTitle": {},
+
+  "teacherMyClass": "My Class",
+  "@teacherMyClass": {},
+
+  "teacherClassIncharge": "Class Incharge",
+  "@teacherClassIncharge": {},
+
+  "teacherClassHealth": "Class Health",
+  "@teacherClassHealth": {},
+
+  "teacherClassAttendance": "Attendance",
+  "@teacherClassAttendance": {},
+
+  "teacherAvgGrade": "Avg. Grade",
+  "@teacherAvgGrade": {},
+
+  "teacherPendingHW": "Pending HW",
+  "@teacherPendingHW": {},
+
+  "teacherSchoolOverview": "School Overview",
+  "@teacherSchoolOverview": {},
+
+  "teacherTakeAttendance": "Attendance",
+  "@teacherTakeAttendance": {},
+
+  "teacherPostHomework": "Post HW",
+  "@teacherPostHomework": {},
+
+  "teacherPostReminder": "Reminder",
+  "@teacherPostReminder": {},
+
+  "teacherSubmitAttendance": "Submit Attendance",
+  "@teacherSubmitAttendance": {},
+
+  "teacherAttendanceSaved": "Attendance marked successfully!",
+  "@teacherAttendanceSaved": {},
+
+  "teacherHomeworkPosted": "Homework posted for the class!",
+  "@teacherHomeworkPosted": {},
+
+  "teacherReminderPosted": "Reminder sent to the class!",
+  "@teacherReminderPosted": {},
+
+  "teacherPostHomeworkTitle": "Post Homework",
+  "@teacherPostHomeworkTitle": {},
+
+  "teacherPostReminderTitle": "Post Reminder",
+  "@teacherPostReminderTitle": {},
+
+  "teacherSelectSubject": "Select Subject",
+  "@teacherSelectSubject": {},
+
+  "teacherHomeworkTitleLabel": "Title",
+  "@teacherHomeworkTitleLabel": {},
+
+  "teacherHomeworkTitleHint": "e.g. Exercise 4.3 – Quadratic Equations",
+  "@teacherHomeworkTitleHint": {},
+
+  "teacherHomeworkDescLabel": "Description",
+  "@teacherHomeworkDescLabel": {},
+
+  "teacherHomeworkDescHint": "What students should do (optional)",
+  "@teacherHomeworkDescHint": {},
+
+  "teacherDueDateLabel": "Due Date",
+  "@teacherDueDateLabel": {},
+
+  "teacherSelectDueDate": "Select due date",
+  "@teacherSelectDueDate": {},
+
+  "teacherPriorityLabel": "Priority",
+  "@teacherPriorityLabel": {},
+
+  "teacherReminderMessageLabel": "Message",
+  "@teacherReminderMessageLabel": {},
+
+  "teacherReminderMessageHint": "Write the reminder here…",
+  "@teacherReminderMessageHint": {},
+
+  "teacherReminderTypeLabel": "Reminder Type",
+  "@teacherReminderTypeLabel": {}
 }

@@ -11,6 +11,7 @@ import '../models/class_stats_model.dart';
 import '../models/badge_model.dart';
 import '../models/badge_type_model.dart';
 import '../models/class_reminder_model.dart';
+import '../models/parent_model.dart';
 
 export '../models/timetable_model.dart';
 
@@ -530,6 +531,153 @@ class DummyData {
         ],
       };
 
+  // ── Class 5-A (Primary) ──────────────────────────────────────
+  static Map<String, List<TimetablePeriod>> get timetableClass5A => {
+        'Monday': [
+          const TimetablePeriod(time: '08:00 - 08:40', subject: 'English', teacher: 'Mrs. Rekha Tiwari', room: 'Room 5'),
+          const TimetablePeriod(time: '08:40 - 09:20', subject: 'Mathematics', teacher: 'Mrs. Priya Gupta', room: 'Room 5'),
+          const TimetablePeriod(time: '09:20 - 10:00', subject: 'Hindi', teacher: 'Mrs. Seema Mishra', room: 'Room 5'),
+          const TimetablePeriod(time: '10:00 - 10:15', subject: 'Break', teacher: '', room: ''),
+          const TimetablePeriod(time: '10:15 - 10:55', subject: 'Science', teacher: 'Mrs. Meena Joshi', room: 'Room 5'),
+          const TimetablePeriod(time: '10:55 - 11:35', subject: 'Social Science', teacher: 'Mr. Vijay Kumar', room: 'Room 5'),
+          const TimetablePeriod(time: '11:35 - 12:15', subject: 'Art & Craft', teacher: 'Mrs. Lalita Soni', room: 'Art Room'),
+          const TimetablePeriod(time: '12:15 - 12:45', subject: 'Lunch', teacher: '', room: ''),
+          const TimetablePeriod(time: '12:45 - 01:15', subject: 'Physical Education', teacher: 'Mr. Deepak Rai', room: 'Ground'),
+        ],
+        'Tuesday': [
+          const TimetablePeriod(time: '08:00 - 08:40', subject: 'Mathematics', teacher: 'Mrs. Priya Gupta', room: 'Room 5'),
+          const TimetablePeriod(time: '08:40 - 09:20', subject: 'Science', teacher: 'Mrs. Meena Joshi', room: 'Room 5'),
+          const TimetablePeriod(time: '09:20 - 10:00', subject: 'English', teacher: 'Mrs. Rekha Tiwari', room: 'Room 5'),
+          const TimetablePeriod(time: '10:00 - 10:15', subject: 'Break', teacher: '', room: ''),
+          const TimetablePeriod(time: '10:15 - 10:55', subject: 'Hindi', teacher: 'Mrs. Seema Mishra', room: 'Room 5'),
+          const TimetablePeriod(time: '10:55 - 11:35', subject: 'Mathematics', teacher: 'Mrs. Priya Gupta', room: 'Room 5'),
+          const TimetablePeriod(time: '11:35 - 12:15', subject: 'Social Science', teacher: 'Mr. Vijay Kumar', room: 'Room 5'),
+          const TimetablePeriod(time: '12:15 - 12:45', subject: 'Lunch', teacher: '', room: ''),
+          const TimetablePeriod(time: '12:45 - 01:15', subject: 'English', teacher: 'Mrs. Rekha Tiwari', room: 'Room 5'),
+        ],
+        'Wednesday': [
+          const TimetablePeriod(time: '08:00 - 08:40', subject: 'Hindi', teacher: 'Mrs. Seema Mishra', room: 'Room 5'),
+          const TimetablePeriod(time: '08:40 - 09:20', subject: 'English', teacher: 'Mrs. Rekha Tiwari', room: 'Room 5'),
+          const TimetablePeriod(time: '09:20 - 10:00', subject: 'Mathematics', teacher: 'Mrs. Priya Gupta', room: 'Room 5'),
+          const TimetablePeriod(time: '10:00 - 10:15', subject: 'Break', teacher: '', room: ''),
+          const TimetablePeriod(time: '10:15 - 10:55', subject: 'Art & Craft', teacher: 'Mrs. Lalita Soni', room: 'Art Room'),
+          const TimetablePeriod(time: '10:55 - 11:35', subject: 'Science', teacher: 'Mrs. Meena Joshi', room: 'Room 5'),
+          const TimetablePeriod(time: '11:35 - 12:15', subject: 'Hindi', teacher: 'Mrs. Seema Mishra', room: 'Room 5'),
+          const TimetablePeriod(time: '12:15 - 12:45', subject: 'Lunch', teacher: '', room: ''),
+          const TimetablePeriod(time: '12:45 - 01:15', subject: 'Social Science', teacher: 'Mr. Vijay Kumar', room: 'Room 5'),
+        ],
+        'Thursday': [
+          const TimetablePeriod(time: '08:00 - 08:40', subject: 'Science', teacher: 'Mrs. Meena Joshi', room: 'Room 5'),
+          const TimetablePeriod(time: '08:40 - 09:20', subject: 'Mathematics', teacher: 'Mrs. Priya Gupta', room: 'Room 5'),
+          const TimetablePeriod(time: '09:20 - 10:00', subject: 'Social Science', teacher: 'Mr. Vijay Kumar', room: 'Room 5'),
+          const TimetablePeriod(time: '10:00 - 10:15', subject: 'Break', teacher: '', room: ''),
+          const TimetablePeriod(time: '10:15 - 10:55', subject: 'English', teacher: 'Mrs. Rekha Tiwari', room: 'Room 5'),
+          const TimetablePeriod(time: '10:55 - 11:35', subject: 'Hindi', teacher: 'Mrs. Seema Mishra', room: 'Room 5'),
+          const TimetablePeriod(time: '11:35 - 12:15', subject: 'Physical Education', teacher: 'Mr. Deepak Rai', room: 'Ground'),
+          const TimetablePeriod(time: '12:15 - 12:45', subject: 'Lunch', teacher: '', room: ''),
+          const TimetablePeriod(time: '12:45 - 01:15', subject: 'Mathematics', teacher: 'Mrs. Priya Gupta', room: 'Room 5'),
+        ],
+        'Friday': [
+          const TimetablePeriod(time: '08:00 - 08:40', subject: 'Social Science', teacher: 'Mr. Vijay Kumar', room: 'Room 5'),
+          const TimetablePeriod(time: '08:40 - 09:20', subject: 'Hindi', teacher: 'Mrs. Seema Mishra', room: 'Room 5'),
+          const TimetablePeriod(time: '09:20 - 10:00', subject: 'Science', teacher: 'Mrs. Meena Joshi', room: 'Room 5'),
+          const TimetablePeriod(time: '10:00 - 10:15', subject: 'Break', teacher: '', room: ''),
+          const TimetablePeriod(time: '10:15 - 10:55', subject: 'Mathematics', teacher: 'Mrs. Priya Gupta', room: 'Room 5'),
+          const TimetablePeriod(time: '10:55 - 11:35', subject: 'English', teacher: 'Mrs. Rekha Tiwari', room: 'Room 5'),
+          const TimetablePeriod(time: '11:35 - 12:15', subject: 'Art & Craft', teacher: 'Mrs. Lalita Soni', room: 'Art Room'),
+          const TimetablePeriod(time: '12:15 - 12:45', subject: 'Lunch', teacher: '', room: ''),
+          const TimetablePeriod(time: '12:45 - 01:15', subject: 'Physical Education', teacher: 'Mr. Deepak Rai', room: 'Ground'),
+        ],
+        'Saturday': [
+          const TimetablePeriod(time: '08:00 - 08:40', subject: 'Mathematics', teacher: 'Mrs. Priya Gupta', room: 'Room 5'),
+          const TimetablePeriod(time: '08:40 - 09:20', subject: 'English', teacher: 'Mrs. Rekha Tiwari', room: 'Room 5'),
+          const TimetablePeriod(time: '09:20 - 10:00', subject: 'Hindi', teacher: 'Mrs. Seema Mishra', room: 'Room 5'),
+          const TimetablePeriod(time: '10:00 - 10:15', subject: 'Break', teacher: '', room: ''),
+          const TimetablePeriod(time: '10:15 - 10:55', subject: 'Science', teacher: 'Mrs. Meena Joshi', room: 'Room 5'),
+          const TimetablePeriod(time: '10:55 - 11:35', subject: 'Social Science', teacher: 'Mr. Vijay Kumar', room: 'Room 5'),
+        ],
+      };
+
+  // ── Class 7-C (Middle School) ─────────────────────────────────
+  static Map<String, List<TimetablePeriod>> get timetableClass7C => {
+        'Monday': [
+          const TimetablePeriod(time: '08:00 - 08:45', subject: 'Mathematics', teacher: 'Mr. Rajan Verma', room: 'Room 7'),
+          const TimetablePeriod(time: '08:45 - 09:30', subject: 'English', teacher: 'Mr. Prakash Nair', room: 'Room 7'),
+          const TimetablePeriod(time: '09:30 - 10:15', subject: 'Science', teacher: 'Mrs. Kavita Rao', room: 'Lab 2'),
+          const TimetablePeriod(time: '10:15 - 10:30', subject: 'Break', teacher: '', room: ''),
+          const TimetablePeriod(time: '10:30 - 11:15', subject: 'Hindi', teacher: 'Mrs. Usha Pandey', room: 'Room 7'),
+          const TimetablePeriod(time: '11:15 - 12:00', subject: 'Social Science', teacher: 'Ms. Nandini Joshi', room: 'Room 7'),
+          const TimetablePeriod(time: '12:00 - 12:45', subject: 'Computer Science', teacher: 'Mr. Anil Dubey', room: 'Computer Lab'),
+          const TimetablePeriod(time: '12:45 - 01:15', subject: 'Lunch', teacher: '', room: ''),
+          const TimetablePeriod(time: '01:15 - 02:00', subject: 'Mathematics', teacher: 'Mr. Rajan Verma', room: 'Room 7'),
+        ],
+        'Tuesday': [
+          const TimetablePeriod(time: '08:00 - 08:45', subject: 'Hindi', teacher: 'Mrs. Usha Pandey', room: 'Room 7'),
+          const TimetablePeriod(time: '08:45 - 09:30', subject: 'Science', teacher: 'Mrs. Kavita Rao', room: 'Lab 2'),
+          const TimetablePeriod(time: '09:30 - 10:15', subject: 'Mathematics', teacher: 'Mr. Rajan Verma', room: 'Room 7'),
+          const TimetablePeriod(time: '10:15 - 10:30', subject: 'Break', teacher: '', room: ''),
+          const TimetablePeriod(time: '10:30 - 11:15', subject: 'English', teacher: 'Mr. Prakash Nair', room: 'Room 7'),
+          const TimetablePeriod(time: '11:15 - 12:00', subject: 'Computer Science', teacher: 'Mr. Anil Dubey', room: 'Computer Lab'),
+          const TimetablePeriod(time: '12:00 - 12:45', subject: 'Social Science', teacher: 'Ms. Nandini Joshi', room: 'Room 7'),
+          const TimetablePeriod(time: '12:45 - 01:15', subject: 'Lunch', teacher: '', room: ''),
+          const TimetablePeriod(time: '01:15 - 02:00', subject: 'Physical Education', teacher: 'Mr. Deepak Rai', room: 'Ground'),
+        ],
+        'Wednesday': [
+          const TimetablePeriod(time: '08:00 - 08:45', subject: 'English', teacher: 'Mr. Prakash Nair', room: 'Room 7'),
+          const TimetablePeriod(time: '08:45 - 09:30', subject: 'Hindi', teacher: 'Mrs. Usha Pandey', room: 'Room 7'),
+          const TimetablePeriod(time: '09:30 - 10:15', subject: 'Social Science', teacher: 'Ms. Nandini Joshi', room: 'Room 7'),
+          const TimetablePeriod(time: '10:15 - 10:30', subject: 'Break', teacher: '', room: ''),
+          const TimetablePeriod(time: '10:30 - 11:15', subject: 'Mathematics', teacher: 'Mr. Rajan Verma', room: 'Room 7'),
+          const TimetablePeriod(time: '11:15 - 12:00', subject: 'Science', teacher: 'Mrs. Kavita Rao', room: 'Lab 2'),
+          const TimetablePeriod(time: '12:00 - 12:45', subject: 'Art & Craft', teacher: 'Mrs. Lalita Soni', room: 'Art Room'),
+          const TimetablePeriod(time: '12:45 - 01:15', subject: 'Lunch', teacher: '', room: ''),
+          const TimetablePeriod(time: '01:15 - 02:00', subject: 'Hindi', teacher: 'Mrs. Usha Pandey', room: 'Room 7'),
+        ],
+        'Thursday': [
+          const TimetablePeriod(time: '08:00 - 08:45', subject: 'Science', teacher: 'Mrs. Kavita Rao', room: 'Lab 2'),
+          const TimetablePeriod(time: '08:45 - 09:30', subject: 'Mathematics', teacher: 'Mr. Rajan Verma', room: 'Room 7'),
+          const TimetablePeriod(time: '09:30 - 10:15', subject: 'English', teacher: 'Mr. Prakash Nair', room: 'Room 7'),
+          const TimetablePeriod(time: '10:15 - 10:30', subject: 'Break', teacher: '', room: ''),
+          const TimetablePeriod(time: '10:30 - 11:15', subject: 'Computer Science', teacher: 'Mr. Anil Dubey', room: 'Computer Lab'),
+          const TimetablePeriod(time: '11:15 - 12:00', subject: 'Hindi', teacher: 'Mrs. Usha Pandey', room: 'Room 7'),
+          const TimetablePeriod(time: '12:00 - 12:45', subject: 'Library', teacher: 'Mr. Suresh Verma', room: 'Library'),
+          const TimetablePeriod(time: '12:45 - 01:15', subject: 'Lunch', teacher: '', room: ''),
+          const TimetablePeriod(time: '01:15 - 02:00', subject: 'Social Science', teacher: 'Ms. Nandini Joshi', room: 'Room 7'),
+        ],
+        'Friday': [
+          const TimetablePeriod(time: '08:00 - 08:45', subject: 'Social Science', teacher: 'Ms. Nandini Joshi', room: 'Room 7'),
+          const TimetablePeriod(time: '08:45 - 09:30', subject: 'Mathematics', teacher: 'Mr. Rajan Verma', room: 'Room 7'),
+          const TimetablePeriod(time: '09:30 - 10:15', subject: 'Hindi', teacher: 'Mrs. Usha Pandey', room: 'Room 7'),
+          const TimetablePeriod(time: '10:15 - 10:30', subject: 'Break', teacher: '', room: ''),
+          const TimetablePeriod(time: '10:30 - 11:15', subject: 'Science', teacher: 'Mrs. Kavita Rao', room: 'Lab 2'),
+          const TimetablePeriod(time: '11:15 - 12:00', subject: 'English', teacher: 'Mr. Prakash Nair', room: 'Room 7'),
+          const TimetablePeriod(time: '12:00 - 12:45', subject: 'Computer Science', teacher: 'Mr. Anil Dubey', room: 'Computer Lab'),
+          const TimetablePeriod(time: '12:45 - 01:15', subject: 'Lunch', teacher: '', room: ''),
+          const TimetablePeriod(time: '01:15 - 02:00', subject: 'Physical Education', teacher: 'Mr. Deepak Rai', room: 'Ground'),
+        ],
+        'Saturday': [
+          const TimetablePeriod(time: '08:00 - 08:45', subject: 'Mathematics', teacher: 'Mr. Rajan Verma', room: 'Room 7'),
+          const TimetablePeriod(time: '08:45 - 09:30', subject: 'Science', teacher: 'Mrs. Kavita Rao', room: 'Lab 2'),
+          const TimetablePeriod(time: '09:30 - 10:15', subject: 'English', teacher: 'Mr. Prakash Nair', room: 'Room 7'),
+          const TimetablePeriod(time: '10:15 - 10:30', subject: 'Break', teacher: '', room: ''),
+          const TimetablePeriod(time: '10:30 - 11:15', subject: 'Hindi', teacher: 'Mrs. Usha Pandey', room: 'Room 7'),
+          const TimetablePeriod(time: '11:15 - 12:00', subject: 'Social Science', teacher: 'Ms. Nandini Joshi', room: 'Room 7'),
+        ],
+      };
+
+  // ── Timetable lookup ──────────────────────────────────────────
+  static Map<String, List<TimetablePeriod>> timetableFor(
+      String classGrade, String section) {
+    switch ('$classGrade-$section') {
+      case '5-A':
+        return timetableClass5A;
+      case '7-C':
+        return timetableClass7C;
+      default:
+        return timetableClass10A;
+    }
+  }
+
   // ──────────────────────── ATTENDANCE ─────────────────────────
   static List<AttendanceRecord> generateAttendance(
     String studentId, {
@@ -612,6 +760,91 @@ class DummyData {
   static int periodsCountFor(String dayName) {
     final periods = timetableClass10A[dayName] ?? [];
     return periods.where((p) => !p.isBreak).length;
+  }
+
+  // The logged-in demo teacher (used for teacher role).
+  static TeacherModel get currentTeacher => teachers.first;
+
+  /// Builds a personal teaching schedule for [teacherName] by scanning all
+  /// known class timetables.  The returned periods use the class label
+  /// ("Class 10-A") in the `teacher` field so callers can show which class
+  /// each slot belongs to.
+  static Map<String, List<TimetablePeriod>> teacherSchedule(String teacherName) {
+    final allTimetables = <String, Map<String, List<TimetablePeriod>>>{
+      '10-A': timetableClass10A,
+      '7-C':  timetableClass7C,
+      '5-A':  timetableClass5A,
+    };
+
+    const dayOrder = [
+      'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
+    ];
+
+    final result = <String, List<TimetablePeriod>>{};
+
+    for (final classEntry in allTimetables.entries) {
+      final classLabel = 'Class ${classEntry.key}';
+      for (final dayEntry in classEntry.value.entries) {
+        final dayName = dayEntry.key;
+        for (final period in dayEntry.value) {
+          if (period.isBreak) continue;
+          if (period.teacher == teacherName) {
+            result.putIfAbsent(dayName, () => []).add(
+              TimetablePeriod(
+                time: period.time,
+                subject: period.subject,
+                teacher: classLabel,
+                room: period.room,
+              ),
+            );
+          }
+        }
+      }
+    }
+
+    // Sort each day's periods chronologically and return in day order
+    final ordered = <String, List<TimetablePeriod>>{};
+    for (final day in dayOrder) {
+      final periods = result[day];
+      if (periods != null) {
+        periods.sort((a, b) => a.time.compareTo(b.time));
+        ordered[day] = periods;
+      }
+    }
+    return ordered;
+  }
+
+  // Demo attendance % for a class — replace with real aggregation once backend is ready.
+  static double classAttendancePct(String classGrade, String section) {
+    switch ('$classGrade-$section') {
+      case '10-A': return 87.5;
+      case '12-A': return 92.3;
+      case '8-B': return 94.1;
+      case '6-A': return 89.7;
+      case '9-B': return 85.4;
+      case '11-A': return 88.6;
+      default: return 85.0;
+    }
+  }
+
+  // Demo overall grade for a class.
+  static String classAvgGrade(String classGrade, String section) {
+    switch ('$classGrade-$section') {
+      case '10-A': return 'B1';
+      case '12-A': return 'B2';
+      case '8-B': return 'A2';
+      case '6-A': return 'B1';
+      case '9-B': return 'B2';
+      case '11-A': return 'B1';
+      default: return 'B1';
+    }
+  }
+
+  // Count of not-submitted, not-overdue assignments for a class.
+  static int pendingHomeworkCount(String classGrade, String section) {
+    return homeworkFor(classGrade, section)
+        .where((h) => !h.isSubmitted && !h.isOverdue)
+        .length;
   }
 
   // ───────────── CLASS REMINDERS (teacher-posted, per day-of-week) ─────────
@@ -793,6 +1026,33 @@ class DummyData {
   }
 
   // ──────────────────────── HOMEWORK ────────────────────────────
+  // ───────────────────────── PARENTS ────────────────────────────────────
+  static const List<ParentModel> parents = [
+    ParentModel(id: 'p001', name: 'Rakesh Sharma'),
+  ];
+
+  static ParentModel? parentFor(String parentId) {
+    try {
+      return parents.firstWhere((p) => p.id == parentId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ───────────────────────── PARENT → CHILDREN ──────────────────────────
+  static const Map<String, List<String>> _parentChildIds = {
+    // Demo parent p001 has three children across different classes
+    'p001': ['s001', 's004', 's005'],
+  };
+
+  static List<String> childIdsForParent(String parentId) =>
+      _parentChildIds[parentId] ?? [];
+
+  static List<StudentModel> childrenForParent(String parentId) {
+    final ids = childIdsForParent(parentId);
+    return students.where((s) => ids.contains(s.id)).toList();
+  }
+
   static List<HomeworkItem> homeworkFor(String classGrade, String section) {
     return [
       HomeworkItem(

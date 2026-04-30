@@ -93,6 +93,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeNoUpcomingEvents => 'No upcoming events soon';
 
   @override
+  String get homeParentMonitoring => 'Child Monitoring';
+
+  @override
+  String get homeParentAlerts => 'Alerts';
+
+  @override
+  String get homeParentNoAlerts => 'All clear — no alerts.';
+
+  @override
+  String get homeParentGrade => 'Grade';
+
+  @override
+  String get homeParentFeeStatus => 'Fee Status';
+
+  @override
+  String get homeParentLowAttendance => 'Attendance below 75%';
+
+  @override
+  String get homeParentOverdueFees => 'Fee payment pending';
+
+  @override
+  String homeParentOverdueHomework(int count) {
+    return '$count assignment(s) overdue';
+  }
+
+  @override
+  String homeParentChildTeachers(String name) {
+    return '$name\'s Teachers';
+  }
+
+  @override
   String get homeStatTotalStudents => 'Total Students';
 
   @override
@@ -413,4 +444,86 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get achievementsTitle => 'My Achievements';
+
+  @override
+  String get teacherMyClass => 'My Class';
+
+  @override
+  String get teacherClassIncharge => 'Class Incharge';
+
+  @override
+  String get teacherClassHealth => 'Class Health';
+
+  @override
+  String get teacherClassAttendance => 'Attendance';
+
+  @override
+  String get teacherAvgGrade => 'Avg. Grade';
+
+  @override
+  String get teacherPendingHW => 'Pending HW';
+
+  @override
+  String get teacherSchoolOverview => 'School Overview';
+
+  @override
+  String get teacherTakeAttendance => 'Attendance';
+
+  @override
+  String get teacherPostHomework => 'Post HW';
+
+  @override
+  String get teacherPostReminder => 'Reminder';
+
+  @override
+  String get teacherSubmitAttendance => 'Submit Attendance';
+
+  @override
+  String get teacherAttendanceSaved => 'Attendance marked successfully!';
+
+  @override
+  String get teacherHomeworkPosted => 'Homework posted for the class!';
+
+  @override
+  String get teacherReminderPosted => 'Reminder sent to the class!';
+
+  @override
+  String get teacherPostHomeworkTitle => 'Post Homework';
+
+  @override
+  String get teacherPostReminderTitle => 'Post Reminder';
+
+  @override
+  String get teacherSelectSubject => 'Select Subject';
+
+  @override
+  String get teacherHomeworkTitleLabel => 'Title';
+
+  @override
+  String get teacherHomeworkTitleHint =>
+      'e.g. Exercise 4.3 – Quadratic Equations';
+
+  @override
+  String get teacherHomeworkDescLabel => 'Description';
+
+  @override
+  String get teacherHomeworkDescHint => 'What students should do (optional)';
+
+  @override
+  String get teacherDueDateLabel => 'Due Date';
+
+  @override
+  String get teacherSelectDueDate => 'Select due date';
+
+  @override
+  String get teacherPriorityLabel => 'Priority';
+
+  @override
+  String get teacherReminderMessageLabel => 'Message';
+
+  @override
+  String get teacherReminderMessageHint => 'Write the reminder here…';
+
+  @override
+  String get teacherReminderTypeLabel => 'Reminder Type';
 }

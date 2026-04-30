@@ -67,4 +67,10 @@ class DummyStudentRepository implements StudentRepository {
     await Future.delayed(const Duration(milliseconds: 300));
     return DummyData.feeInstallmentsFor(studentId);
   }
+
+  @override
+  Future<List<StudentModel>> fetchChildrenForParent(String parentId) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    return DummyData.childrenForParent(parentId);
+  }
 }

@@ -10,8 +10,7 @@ class DummyTimetableRepository implements TimetableRepository {
   Future<Map<String, List<TimetablePeriod>>> fetchTimetable(
       String classGrade, String section) async {
     await Future.delayed(const Duration(milliseconds: 350));
-    // Only Class 10-A timetable exists in dummy data.
-    return DummyData.timetableClass10A;
+    return DummyData.timetableFor(classGrade, section);
   }
 
   @override

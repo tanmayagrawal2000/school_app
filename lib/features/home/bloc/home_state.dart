@@ -25,6 +25,15 @@ class HomeLoaded extends HomeState {
   final List<TeacherModel> subjectTeachers;
   final int todayPeriods;
 
+  // Non-empty only for parent role — all linked children
+  final List<StudentModel> children;
+
+  // Set only for parent role — the logged-in parent's name
+  final String? parentName;
+
+  // Set only for teacher role — the logged-in teacher
+  final TeacherModel? currentTeacher;
+
   final Set<String> readIds;
 
   const HomeLoaded({
@@ -35,10 +44,14 @@ class HomeLoaded extends HomeState {
     this.classTeacher,
     this.subjectTeachers = const [],
     this.todayPeriods = 0,
+    this.children = const [],
+    this.parentName,
+    this.currentTeacher,
     this.readIds = const {},
   });
 
   bool get isTeacher => role == UserRole.teacher;
+  bool get isParent => role == UserRole.parent;
   bool isRead(String id) => readIds.contains(id);
 
   HomeLoaded copyWithRead(String id) => HomeLoaded(
@@ -49,7 +62,30 @@ class HomeLoaded extends HomeState {
         classTeacher: classTeacher,
         subjectTeachers: subjectTeachers,
         todayPeriods: todayPeriods,
+        children: children,
+        parentName: parentName,
+        currentTeacher: currentTeacher,
         readIds: {...readIds, id},
+      );
+
+  HomeLoaded copyWithSelectedChild({
+    required StudentModel child,
+    required TeacherModel? classTeacher,
+    required List<TeacherModel> subjectTeachers,
+    required int todayPeriods,
+  }) =>
+      HomeLoaded(
+        role: role,
+        stats: stats,
+        announcements: announcements,
+        currentStudent: child,
+        classTeacher: classTeacher,
+        subjectTeachers: subjectTeachers,
+        todayPeriods: todayPeriods,
+        children: children,
+        parentName: parentName,
+        currentTeacher: currentTeacher,
+        readIds: readIds,
       );
 
   @override
@@ -61,6 +97,9 @@ class HomeLoaded extends HomeState {
         classTeacher,
         subjectTeachers,
         todayPeriods,
+        children,
+        parentName,
+        currentTeacher,
         readIds,
       ];
 }

@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/services/auth_storage.dart';
 import '../../login/login_screen.dart';
 import '../../../data/models/announcement_model.dart';
+import '../../../data/models/student_model.dart';
 import '../../../data/models/teacher_model.dart';
 import '../bloc/home_bloc.dart';
 import '../bloc/home_event.dart';
@@ -20,6 +21,9 @@ import 'achievements_screen.dart';
 import 'announcement_detail_screen.dart';
 import 'announcements_list_screen.dart';
 import 'tomorrow_prep_screen.dart';
+import 'post_reminder_screen.dart';
+import '../../attendance/view/take_attendance_screen.dart';
+import '../../homework/view/post_homework_screen.dart';
 import '../../../data/dummy/dummy_data.dart';
 import '../../../core/services/notification_service.dart';
 import 'package:intl/intl.dart';
@@ -45,19 +49,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Widget> get _tabs => _isTeacher
       ? [
-          _DashboardTab(role: widget.role, onTimetableTap: _goToTimetable),
+          _DashboardTab(
+            role: widget.role,
+            onTimetableTap: _goToTimetable,
+            onStudentsTap: _goToStudents,
+          ),
           const StudentListScreen(),
           const BusTrackingScreen(),
           TimetableScreen(onBack: _goToDashboard),
         ]
       : [
-          _DashboardTab(role: widget.role, onTimetableTap: _goToTimetable),
+          _DashboardTab(
+            role: widget.role,
+            onTimetableTap: _goToTimetable,
+          ),
           const BusTrackingScreen(),
           TimetableScreen(onBack: _goToDashboard),
         ];
 
   void _goToTimetable() => setState(() => _currentIndex = _timetableTabIndex);
   void _goToDashboard() => setState(() => _currentIndex = 0);
+  void _goToStudents() => setState(() => _currentIndex = 1);
 
   @override
   void initState() {
@@ -144,7 +156,12 @@ class _HomeScreenState extends State<HomeScreen> {
 class _DashboardTab extends StatelessWidget {
   final UserRole role;
   final VoidCallback onTimetableTap;
-  const _DashboardTab({required this.role, required this.onTimetableTap});
+  final VoidCallback? onStudentsTap;
+  const _DashboardTab({
+    required this.role,
+    required this.onTimetableTap,
+    this.onStudentsTap,
+  });
 
   static const double _kMaxWidth = 800;
 
@@ -184,9 +201,15 @@ class _DashboardTab extends StatelessWidget {
 
   Widget _buildSliverAppBar(BuildContext context, HomeState state) {
     final l10n = AppLocalizations.of(context)!;
-    final firstName = state is HomeLoaded && state.currentStudent != null
-        ? state.currentStudent!.name.split(' ').first
-        : null;
+    final loaded = state is HomeLoaded ? state : null;
+    final isParent = loaded?.isParent ?? false;
+    final isTeacher = loaded?.isTeacher ?? false;
+    // Teacher → teacher's first name; parent → parent's first name; student → student's first name
+    final firstName = isTeacher
+        ? loaded?.currentTeacher?.firstName
+        : isParent
+            ? loaded?.parentName?.split(' ').first
+            : loaded?.currentStudent?.name.split(' ').first;
     final greeting = _getGreeting(l10n);
     return SliverAppBar(
       expandedHeight: 180,
@@ -344,59 +367,118 @@ class _DashboardTab extends StatelessWidget {
   Widget _buildOverviewSection(BuildContext context, HomeLoaded state) {
     final l10n = AppLocalizations.of(context)!;
 
-    if (state.isTeacher) {
-      final cards = [
-        _StatCard(
-          title: l10n.homeStatTotalStudents,
-          value: '${state.stats['totalStudents']}',
-          icon: Icons.school,
-          color: AppColors.primaryBrown,
-          bgColor: AppColors.surfaceVariant,
-        ),
-        _StatCard(
-          title: l10n.homeStatTeachers,
-          value: '${state.stats['totalTeachers']}',
-          icon: Icons.person,
-          color: AppColors.info,
-          bgColor: AppColors.infoLight,
-        ),
-        _StatCard(
-          title: l10n.homeStatAttendanceToday,
-          value: '${state.stats['todayAttendance']}%',
-          icon: Icons.how_to_reg,
-          color: AppColors.success,
-          bgColor: AppColors.successLight,
-        ),
-        _StatCard(
-          title: l10n.homeStatBusesOnRoute,
-          value: '${state.stats['busesOnRoute']}',
-          icon: Icons.directions_bus,
-          color: AppColors.saffron,
-          bgColor: AppColors.warningLight,
-        ),
-      ];
+    if (state.isTeacher && state.currentTeacher != null) {
+      final teacher = state.currentTeacher!;
+      final (classGrade, section) = teacher.inchargeClassParts;
+      final attendancePct = DummyData.classAttendancePct(classGrade, section);
+      final avgGrade = DummyData.classAvgGrade(classGrade, section);
+      final pendingHW = DummyData.pendingHomeworkCount(classGrade, section);
+
+      final attendanceColor = attendancePct >= 85
+          ? AppColors.success
+          : attendancePct >= 75
+              ? AppColors.saffron
+              : AppColors.error;
+
       return _frame(
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(l10n.homeOverview, style: Theme.of(context).textTheme.titleLarge),
+              // ── My Class card ────────────────────────────────────
+              _TeacherClassCard(
+                teacher: teacher,
+                classGrade: classGrade,
+                section: section,
+                todayPeriods: state.todayPeriods,
+                l10n: l10n,
+              ),
               const SizedBox(height: 12),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final wide = constraints.maxWidth > 500;
-                  return GridView.count(
-                    crossAxisCount: wide ? 4 : 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: EdgeInsets.zero,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: wide ? 2.0 : 1.7,
-                    children: cards,
-                  );
-                },
+
+              // ── Class Health strip ───────────────────────────────
+              Text(l10n.teacherClassHealth,
+                  style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 10),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                        color: AppColors.shadow,
+                        blurRadius: 8,
+                        offset: const Offset(0, 2))
+                  ],
+                ),
+                child: IntrinsicHeight(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _MonitorCell(
+                          icon: Icons.how_to_reg_outlined,
+                          label: l10n.teacherClassAttendance,
+                          value: '${attendancePct.toStringAsFixed(0)}%',
+                          color: attendanceColor,
+                          onTap: () {},
+                        ),
+                      ),
+                      const VerticalDivider(
+                          width: 1, thickness: 1, color: AppColors.divider),
+                      Expanded(
+                        child: _MonitorCell(
+                          icon: Icons.school_outlined,
+                          label: l10n.teacherAvgGrade,
+                          value: avgGrade,
+                          color: AppColors.info,
+                          onTap: () {},
+                        ),
+                      ),
+                      const VerticalDivider(
+                          width: 1, thickness: 1, color: AppColors.divider),
+                      Expanded(
+                        child: _MonitorCell(
+                          icon: Icons.library_books_outlined,
+                          label: l10n.teacherPendingHW,
+                          value: '$pendingHW',
+                          color: pendingHW > 0
+                              ? AppColors.saffron
+                              : AppColors.success,
+                          onTap: () {},
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // ── School Overview (condensed) ──────────────────────
+              Text(l10n.teacherSchoolOverview,
+                  style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatCard(
+                      title: l10n.homeStatTotalStudents,
+                      value: '${state.stats['totalStudents']}',
+                      icon: Icons.school,
+                      color: AppColors.primaryBrown,
+                      bgColor: AppColors.surfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _StatCard(
+                      title: l10n.homeStatAttendanceToday,
+                      value: '${state.stats['todayAttendance']}%',
+                      icon: Icons.how_to_reg,
+                      color: AppColors.success,
+                      bgColor: AppColors.successLight,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -404,8 +486,7 @@ class _DashboardTab extends StatelessWidget {
       );
     }
 
-    // Student / Parent view
-    final attendancePct = state.currentStudent?.attendancePercent ?? 0.0;
+    // Shared upcoming events computation
     final todayMidnight = DateTime(
       DateTime.now().year,
       DateTime.now().month,
@@ -420,6 +501,60 @@ class _DashboardTab extends StatelessWidget {
                 a.type == AnnouncementType.sports))
         .toList()
       ..sort((a, b) => a.date.compareTo(b.date));
+
+    // ── Parent view ───────────────────────────────────────────────────────
+    if (state.isParent && state.currentStudent != null) {
+      return _frame(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.homeOverview,
+                  style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              if (state.children.length > 1) ...[
+                _ChildSwitcher(
+                  children: state.children,
+                  selected: state.currentStudent!,
+                ),
+                const SizedBox(height: 12),
+              ],
+              _ParentMonitorRow(
+                student: state.currentStudent!,
+                onAttendanceTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        AttendanceScreen(student: state.currentStudent!),
+                  ),
+                ),
+                onFeesTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FeesScreen(student: state.currentStudent!),
+                  ),
+                ),
+                onResultsTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        ResultsScreen(student: state.currentStudent!),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _ParentAlertsCard(student: state.currentStudent!),
+              const SizedBox(height: 12),
+              _UpcomingOverviewCard(upcoming: upcoming.take(3).toList()),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // ── Student view ──────────────────────────────────────────────────────
+    final attendancePct = state.currentStudent?.attendancePercent ?? 0.0;
 
     return _frame(
       Padding(
@@ -492,7 +627,12 @@ class _DashboardTab extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(l10n.homeMyTeachers, style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                state.isParent && student != null
+                    ? l10n.homeParentChildTeachers(student.name.split(' ').first)
+                    : l10n.homeMyTeachers,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -533,21 +673,183 @@ class _DashboardTab extends StatelessWidget {
 
   Widget _buildQuickActions(BuildContext context, HomeLoaded state) {
     final l10n = AppLocalizations.of(context)!;
+
+    // Teacher quick actions
+    if (state.isTeacher && state.currentTeacher != null) {
+      final teacher = state.currentTeacher!;
+      final (classGrade, section) = teacher.inchargeClassParts;
+      final subjects = teacher.subject.contains('/')
+          ? teacher.subject.split('/').map((s) => s.trim()).toList()
+          : [teacher.subject];
+
+      final actions = [
+        _QuickAction(
+          icon: Icons.how_to_reg_outlined,
+          label: l10n.teacherTakeAttendance,
+          color: AppColors.success,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => TakeAttendanceScreen(
+                  classGrade: classGrade, section: section),
+            ),
+          ),
+        ),
+        _QuickAction(
+          icon: Icons.library_books_outlined,
+          label: l10n.teacherPostHomework,
+          color: AppColors.info,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PostHomeworkScreen(
+                  classGrade: classGrade,
+                  section: section,
+                  subjects: subjects),
+            ),
+          ),
+        ),
+        _QuickAction(
+          icon: Icons.notifications_outlined,
+          label: l10n.teacherPostReminder,
+          color: AppColors.saffron,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PostReminderScreen(
+                  classGrade: classGrade,
+                  section: section,
+                  subjects: subjects),
+            ),
+          ),
+        ),
+        _QuickAction(
+          icon: Icons.people_outlined,
+          label: l10n.navStudents,
+          color: AppColors.primaryBrown,
+          onTap: () => onStudentsTap?.call(),
+        ),
+        _QuickAction(
+          icon: Icons.event_note_outlined,
+          label: l10n.navTimetable,
+          color: AppColors.lotusPink,
+          onTap: () => onTimetableTap(),
+        ),
+        _QuickAction(
+          icon: Icons.campaign_outlined,
+          label: l10n.homeAnnouncements,
+          color: AppColors.gold,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AnnouncementsListScreen()),
+          ),
+        ),
+      ];
+
+      return _frame(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.homeQuickAccess,
+                  style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final cols = constraints.maxWidth > 500 ? 6 : 3;
+                  return GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: cols,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 1.1,
+                    ),
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    itemCount: actions.length,
+                    itemBuilder: (context, i) => _buildActionTile(context, actions[i]),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Student / parent quick actions
     final actions = [
-      _QuickAction(icon: Icons.bar_chart_rounded, label: l10n.quickResults, color: AppColors.primaryBrown),
-      _QuickAction(icon: Icons.event_note_outlined, label: l10n.quickTimetable, color: AppColors.info),
-      _QuickAction(icon: Icons.how_to_reg_outlined, label: l10n.quickAttendance, color: AppColors.success),
-      _QuickAction(icon: Icons.payments_outlined, label: l10n.quickFees, color: AppColors.saffron),
-      _QuickAction(icon: Icons.library_books_outlined, label: l10n.quickHomework, color: AppColors.lotusPink),
-      _QuickAction(icon: Icons.military_tech_rounded, label: l10n.quickAchievements, color: AppColors.gold),
+      _QuickAction(
+        icon: Icons.bar_chart_rounded,
+        label: l10n.quickResults,
+        color: AppColors.primaryBrown,
+        onTap: state.currentStudent != null
+            ? () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => ResultsScreen(student: state.currentStudent!),
+                ))
+            : null,
+      ),
+      _QuickAction(
+        icon: Icons.event_note_outlined,
+        label: l10n.quickTimetable,
+        color: AppColors.info,
+        onTap: () => onTimetableTap(),
+      ),
+      _QuickAction(
+        icon: Icons.how_to_reg_outlined,
+        label: l10n.quickAttendance,
+        color: AppColors.success,
+        onTap: state.currentStudent != null
+            ? () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) =>
+                      AttendanceScreen(student: state.currentStudent!),
+                ))
+            : null,
+      ),
+      _QuickAction(
+        icon: Icons.payments_outlined,
+        label: l10n.quickFees,
+        color: AppColors.saffron,
+        onTap: state.currentStudent != null
+            ? () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => FeesScreen(student: state.currentStudent!),
+                ))
+            : null,
+      ),
+      _QuickAction(
+        icon: Icons.library_books_outlined,
+        label: l10n.quickHomework,
+        color: AppColors.lotusPink,
+        onTap: state.currentStudent != null
+            ? () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) =>
+                      HomeworkScreen(student: state.currentStudent!),
+                ))
+            : null,
+      ),
+      _QuickAction(
+        icon: Icons.military_tech_rounded,
+        label: l10n.quickAchievements,
+        color: AppColors.gold,
+        onTap: state.currentStudent != null
+            ? () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) =>
+                      AchievementsScreen(student: state.currentStudent!),
+                ))
+            : null,
+      ),
     ];
+
     return _frame(
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.homeQuickAccess, style: Theme.of(context).textTheme.titleLarge),
+            Text(l10n.homeQuickAccess,
+                style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
             LayoutBuilder(
               builder: (context, constraints) {
@@ -563,74 +865,51 @@ class _DashboardTab extends StatelessWidget {
                   physics: const NeverScrollableScrollPhysics(),
                   padding: EdgeInsets.zero,
                   itemCount: actions.length,
-                  itemBuilder: (context, i) {
-              final a = actions[i];
-              return GestureDetector(
-                onTap: () {
-                  if (a.label == l10n.quickResults && state.currentStudent != null) {
-                    Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => ResultsScreen(student: state.currentStudent!),
-                    ));
-                  } else if (a.label == l10n.quickAttendance && state.currentStudent != null) {
-                    Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => AttendanceScreen(student: state.currentStudent!),
-                    ));
-                  } else if (a.label == l10n.quickFees && state.currentStudent != null) {
-                    Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => FeesScreen(student: state.currentStudent!),
-                    ));
-                  } else if (a.label == l10n.quickHomework && state.currentStudent != null) {
-                    Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => HomeworkScreen(student: state.currentStudent!),
-                    ));
-                  } else if (a.label == l10n.quickTimetable) {
-                    onTimetableTap();
-                  } else if (a.label == l10n.quickAchievements && state.currentStudent != null) {
-                    Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => AchievementsScreen(student: state.currentStudent!),
-                    ));
-                  }
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.shadow,
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: a.color.withOpacity(0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(a.icon, color: a.color, size: 22),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        a.label,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-                  },
+                  itemBuilder: (context, i) => _buildActionTile(context, actions[i]),
                 );
               },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionTile(BuildContext context, _QuickAction a) {
+    return GestureDetector(
+      onTap: a.onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: a.color.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(a.icon, color: a.color, size: 22),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              a.label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -1303,11 +1582,117 @@ class _UpcomingOverviewCard extends StatelessWidget {
   }
 }
 
+// ─────────────────────── TEACHER CLASS CARD ─────────────────────────────────
+
+class _TeacherClassCard extends StatelessWidget {
+  final TeacherModel teacher;
+  final String classGrade;
+  final String section;
+  final int todayPeriods;
+  final AppLocalizations l10n;
+
+  const _TeacherClassCard({
+    required this.teacher,
+    required this.classGrade,
+    required this.section,
+    required this.todayPeriods,
+    required this.l10n,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.primaryBrownDark, AppColors.primaryBrown],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryBrown.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.teacherClassIncharge,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        letterSpacing: 0.5,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Class $classGrade-$section',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    teacher.subject,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Column(
+            children: [
+              Text(
+                '$todayPeriods',
+                style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              Text(
+                "Today's\nPeriods",
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.75),
+                    ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _QuickAction {
   final IconData icon;
   final String label;
   final Color color;
-  const _QuickAction({required this.icon, required this.label, required this.color});
+  final VoidCallback? onTap;
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    this.onTap,
+  });
 }
 
 class _AnnouncementCard extends StatelessWidget {
@@ -1652,5 +2037,385 @@ class _AnnouncementCard extends StatelessWidget {
       case AnnouncementType.general:
         return l10n.announcementTypeGeneral;
     }
+  }
+}
+
+// ─────────────────────── CHILD SWITCHER ─────────────────────────────────────
+
+class _ChildSwitcher extends StatelessWidget {
+  final List<StudentModel> children;
+  final StudentModel selected;
+  const _ChildSwitcher({required this.children, required this.selected});
+
+  static const List<Color> _chipColors = [
+    AppColors.primaryBrown,
+    AppColors.info,
+    AppColors.success,
+    AppColors.saffron,
+    AppColors.lotusPink,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: children.map((child) {
+          final isSelected = child.id == selected.id;
+          final color =
+              _chipColors[children.indexOf(child) % _chipColors.length];
+          return GestureDetector(
+            onTap: isSelected
+                ? null
+                : () =>
+                    context.read<HomeBloc>().add(HomeSelectChild(child)),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.only(right: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isSelected ? color : AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected ? color : AppColors.divider,
+                  width: 1.5,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        )
+                      ]
+                    : [],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    child.name.split(' ').first,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: isSelected ? Colors.white : AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Class ${child.classGrade}-${child.section}',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: isSelected
+                              ? Colors.white.withValues(alpha: 0.85)
+                              : AppColors.textHint,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ──────────────────── PARENT MONITOR ROW ────────────────────────────────────
+
+class _ParentMonitorRow extends StatelessWidget {
+  final StudentModel student;
+  final VoidCallback onAttendanceTap;
+  final VoidCallback onFeesTap;
+  final VoidCallback onResultsTap;
+
+  const _ParentMonitorRow({
+    required this.student,
+    required this.onAttendanceTap,
+    required this.onFeesTap,
+    required this.onResultsTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final pct = student.attendancePercent.clamp(0.0, 100.0);
+    final attendanceColor = pct >= 75
+        ? AppColors.success
+        : pct >= 60
+            ? AppColors.saffron
+            : AppColors.error;
+
+    final feeColor = student.feeStatus == 'Paid'
+        ? AppColors.success
+        : student.feeStatus == 'Overdue'
+            ? AppColors.error
+            : AppColors.saffron;
+
+    final gradeColor = _gradeColor(student.grade);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 8,
+              offset: const Offset(0, 2))
+        ],
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            Expanded(
+              child: _MonitorCell(
+                icon: Icons.how_to_reg_outlined,
+                label: l10n.homeStatMyAttendance,
+                value: '${pct.toStringAsFixed(0)}%',
+                color: attendanceColor,
+                onTap: onAttendanceTap,
+              ),
+            ),
+            const VerticalDivider(width: 1, thickness: 1, color: AppColors.divider),
+            Expanded(
+              child: _MonitorCell(
+                icon: Icons.school_outlined,
+                label: l10n.homeParentGrade,
+                value: student.grade,
+                color: gradeColor,
+                onTap: onResultsTap,
+              ),
+            ),
+            const VerticalDivider(width: 1, thickness: 1, color: AppColors.divider),
+            Expanded(
+              child: _MonitorCell(
+                icon: Icons.payments_outlined,
+                label: l10n.homeParentFeeStatus,
+                value: student.feeStatus,
+                color: feeColor,
+                onTap: onFeesTap,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _gradeColor(String grade) {
+    if (grade == 'A1' || grade == 'A2') return AppColors.success;
+    if (grade == 'B1' || grade == 'B2') return AppColors.info;
+    if (grade == 'C1' || grade == 'C2') return AppColors.saffron;
+    return AppColors.error;
+  }
+}
+
+class _MonitorCell extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _MonitorCell({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppColors.textHint,
+                  ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ──────────────────── PARENT ALERTS CARD ────────────────────────────────────
+
+class _ParentAlertsCard extends StatelessWidget {
+  final StudentModel student;
+  const _ParentAlertsCard({required this.student});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final alerts = _buildAlerts(l10n);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 8,
+              offset: const Offset(0, 2))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.notifications_active_outlined,
+                  size: 18, color: AppColors.primaryBrown),
+              const SizedBox(width: 6),
+              Text(
+                l10n.homeParentAlerts,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(width: 6),
+              if (alerts.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: AppColors.error,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${alerts.length}',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (alerts.isEmpty)
+            Row(
+              children: [
+                const Icon(Icons.check_circle_outline,
+                    size: 16, color: AppColors.success),
+                const SizedBox(width: 8),
+                Text(l10n.homeParentNoAlerts,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: AppColors.textSecondary)),
+              ],
+            )
+          else
+            ...alerts.map((a) => _AlertRow(alert: a)),
+        ],
+      ),
+    );
+  }
+
+  List<_AlertData> _buildAlerts(AppLocalizations l10n) {
+    final alerts = <_AlertData>[];
+    final pct = student.attendancePercent;
+    if (pct < 75) {
+      alerts.add(_AlertData(
+        icon: Icons.warning_amber_rounded,
+        color: AppColors.error,
+        message: l10n.homeParentLowAttendance,
+      ));
+    }
+    if (student.feeStatus == 'Partial' || student.feeStatus == 'Overdue') {
+      alerts.add(_AlertData(
+        icon: Icons.payments_outlined,
+        color: AppColors.saffron,
+        message: l10n.homeParentOverdueFees,
+      ));
+    }
+    final overdueCount = DummyData.homeworkFor(student.classGrade, student.section)
+        .where((h) => h.isOverdue)
+        .length;
+    if (overdueCount > 0) {
+      alerts.add(_AlertData(
+        icon: Icons.library_books_outlined,
+        color: AppColors.error,
+        message: l10n.homeParentOverdueHomework(overdueCount),
+      ));
+    }
+    return alerts;
+  }
+}
+
+class _AlertData {
+  final IconData icon;
+  final Color color;
+  final String message;
+  const _AlertData(
+      {required this.icon, required this.color, required this.message});
+}
+
+class _AlertRow extends StatelessWidget {
+  final _AlertData alert;
+  const _AlertRow({required this.alert});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: alert.color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(alert.icon, size: 14, color: alert.color),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              alert.message,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: AppColors.textSecondary),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

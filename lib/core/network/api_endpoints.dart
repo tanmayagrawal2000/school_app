@@ -42,6 +42,9 @@ class ApiEndpoints {
   static const String busRoutes = '/bus/routes';
   static String busRouteById(String id) => '/bus/routes/$id';
 
+  // ── Parents ───────────────────────────────────────────────────────────
+  static String parentChildren(String parentId) => '/parents/$parentId/children';
+
   // ── Badges ────────────────────────────────────────────────────────────
   static const String badgeTypes = '/badge-types';
   static const String badges = '/badges';

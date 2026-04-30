@@ -51,6 +51,18 @@ class TeacherModel extends Equatable {
         'avatarColorIndex': avatarColorIndex,
       };
 
+  String get firstName {
+    final noTitle = name.replaceFirst(RegExp(r'^(Mrs?\.|Ms\.) '), '');
+    return noTitle.split(' ').first;
+  }
+
+  /// Returns (classGrade, section) parsed from classIncharge ("Class 10-A" → ("10", "A")).
+  (String classGrade, String section) get inchargeClassParts {
+    final raw = classIncharge.replaceFirst('Class ', '');
+    final parts = raw.split('-');
+    return (parts.first, parts.length > 1 ? parts[1] : 'A');
+  }
+
   @override
   List<Object?> get props => [id];
 }

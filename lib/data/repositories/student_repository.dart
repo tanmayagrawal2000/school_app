@@ -35,4 +35,7 @@ abstract class StudentRepository {
 
   /// Returns fee installments for [studentId].
   Future<List<FeeInstallment>> fetchFeeInstallments(String studentId);
+
+  /// Returns all children linked to a parent account by [parentId].
+  Future<List<StudentModel>> fetchChildrenForParent(String parentId);
 }

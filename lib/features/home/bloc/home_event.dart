@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../../core/enums/user_role.dart';
+import '../../../data/models/student_model.dart';
 
 abstract class HomeEvent extends Equatable {
   const HomeEvent();
@@ -19,4 +20,11 @@ class HomeMarkAnnouncementRead extends HomeEvent {
   const HomeMarkAnnouncementRead(this.announcementId);
   @override
   List<Object?> get props => [announcementId];
+}
+
+class HomeSelectChild extends HomeEvent {
+  final StudentModel child;
+  const HomeSelectChild(this.child);
+  @override
+  List<Object?> get props => [child];
 }

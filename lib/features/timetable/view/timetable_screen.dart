@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sgm_school_app/l10n/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../data/dummy/dummy_data.dart';
 import '../../../data/models/subject_model.dart';
 import '../../../data/models/timetable_model.dart';
+import '../../home/bloc/home_bloc.dart';
+import '../../home/bloc/home_state.dart';
 import '../bloc/timetable_bloc.dart';
 import '../bloc/timetable_event.dart';
 import '../bloc/timetable_state.dart';
+
+enum _TeacherView { mySchedule, classSchedule }
 
 class TimetableScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -21,18 +26,63 @@ class _TimetableScreenState extends State<TimetableScreen> {
     'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
   ];
 
+  // Teacher-mode state
+  bool _isTeacherMode = false;
+  bool _hasInchargeClass = false;
+  _TeacherView _teacherView = _TeacherView.mySchedule;
+  Map<String, List<TimetablePeriod>> _teacherSchedule = {};
+  String _teacherInchargeLabel = ''; // e.g. "Class 10-A"
+
+  // Unified selected day (used for both teacher schedule and TimetableBloc)
+  String _selectedDay = _todayName();
+
+  void _fetchFor(String classGrade, String section) {
+    context.read<TimetableBloc>().add(
+      TimetableFetch(classGrade: classGrade, section: section),
+    );
+  }
+
+  static String _todayName() {
+    const days = [
+      'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+    ];
+    final idx = DateTime.now().weekday - 1;
+    return idx < 6 ? days[idx] : days[0]; // default Monday on Sunday
+  }
+
   @override
   void initState() {
     super.initState();
-    context.read<TimetableBloc>().add(
-      const TimetableFetch(classGrade: '10', section: 'A'),
-    );
+    final homeState = context.read<HomeBloc>().state;
+    if (homeState is HomeLoaded && homeState.isTeacher &&
+        homeState.currentTeacher != null) {
+      final teacher = homeState.currentTeacher!;
+      _isTeacherMode = true;
+      _hasInchargeClass = teacher.classIncharge.isNotEmpty;
+      _teacherSchedule = DummyData.teacherSchedule(teacher.name);
+      final (classGrade, section) = teacher.inchargeClassParts;
+      _teacherInchargeLabel = 'Class $classGrade-$section';
+      // Pre-fetch the incharge class timetable for the "Class Schedule" tab
+      _fetchFor(classGrade, section);
+    } else if (homeState is HomeLoaded && homeState.currentStudent != null) {
+      _fetchFor(homeState.currentStudent!.classGrade,
+          homeState.currentStudent!.section);
+    } else {
+      _fetchFor('10', 'A');
+    }
+  }
+
+  // Sync TimetableBloc day selection whenever _selectedDay changes
+  void _onDaySelected(String day) {
+    setState(() => _selectedDay = day);
+    context.read<TimetableBloc>().add(TimetableSelectDay(day));
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
+
+    final scaffold = Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(l10n.timetableTitle),
@@ -44,66 +94,187 @@ class _TimetableScreenState extends State<TimetableScreen> {
             : null,
         automaticallyImplyLeading: widget.onBack == null,
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Center(
-              child: BlocBuilder<TimetableBloc, TimetableState>(
-                builder: (context, state) {
-                  if (state is TimetableLoaded) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white24,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'Class ${state.classGrade}-${state.section}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    );
-                  }
-                  return const SizedBox();
-                },
+          if (!_isTeacherMode)
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Center(
+                child: BlocBuilder<TimetableBloc, TimetableState>(
+                  builder: (context, state) {
+                    if (state is TimetableLoaded) {
+                      return _ClassBadge(
+                          classGrade: state.classGrade, section: state.section);
+                    }
+                    return const SizedBox();
+                  },
+                ),
               ),
             ),
-          ),
         ],
       ),
-      body: BlocBuilder<TimetableBloc, TimetableState>(
-        builder: (context, state) {
-          if (state is TimetableLoading) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryBrown),
-            );
+      body: _isTeacherMode
+          ? _buildTeacherBody(context)
+          : _buildStudentParentBody(context),
+    );
+
+    // For student/parent: react to child switches from HomeBloc
+    if (!_isTeacherMode) {
+      return BlocListener<HomeBloc, HomeState>(
+        listenWhen: (prev, curr) {
+          if (prev is HomeLoaded && curr is HomeLoaded) {
+            return prev.currentStudent?.id != curr.currentStudent?.id;
           }
-          if (state is TimetableLoaded) {
-            return Column(
-              children: [
-                _buildDaySelector(context, state),
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    itemCount: state.periodsForSelectedDay.length,
-                    itemBuilder: (context, i) => _PeriodCard(
-                      period: state.periodsForSelectedDay[i],
-                      index: i,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          }
-          return const SizedBox();
+          return false;
         },
+        listener: (context, state) {
+          if (state is HomeLoaded && state.currentStudent != null) {
+            _fetchFor(state.currentStudent!.classGrade,
+                state.currentStudent!.section);
+          }
+        },
+        child: scaffold,
+      );
+    }
+    return scaffold;
+  }
+
+  // ── Teacher body ───────────────────────────────────────────────
+
+  Widget _buildTeacherBody(BuildContext context) {
+    return Column(
+      children: [
+        // View toggle: "My Schedule" + "Class X-A"
+        _buildTeacherViewToggle(context),
+        // Day selector
+        _buildDaySelector(context),
+        // Content
+        Expanded(
+          child: _teacherView == _TeacherView.mySchedule
+              ? _buildMyScheduleList(context)
+              : _buildClassScheduleList(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTeacherViewToggle(BuildContext context) {
+    return Container(
+      color: AppColors.surface,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+      child: Row(
+        children: [
+          _ViewChip(
+            label: 'My Schedule',
+            icon: Icons.person_outline,
+            isSelected: _teacherView == _TeacherView.mySchedule,
+            onTap: () => setState(() => _teacherView = _TeacherView.mySchedule),
+          ),
+          if (_hasInchargeClass) ...[
+            const SizedBox(width: 8),
+            _ViewChip(
+              label: _teacherInchargeLabel,
+              icon: Icons.class_outlined,
+              isSelected: _teacherView == _TeacherView.classSchedule,
+              onTap: () =>
+                  setState(() => _teacherView = _TeacherView.classSchedule),
+            ),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildDaySelector(BuildContext context, TimetableLoaded state) {
+  Widget _buildMyScheduleList(BuildContext context) {
+    final periods = _teacherSchedule[_selectedDay] ?? [];
+    if (periods.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.free_breakfast_outlined,
+                size: 48, color: AppColors.textHint),
+            const SizedBox(height: 12),
+            Text(
+              'No teaching periods on $_selectedDay',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: AppColors.textHint),
+            ),
+          ],
+        ),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: periods.length,
+      itemBuilder: (context, i) => _PeriodCard(
+        period: periods[i],
+        index: i,
+        subtitleLabel: 'Class',
+      ),
+    );
+  }
+
+  Widget _buildClassScheduleList(BuildContext context) {
+    return BlocBuilder<TimetableBloc, TimetableState>(
+      builder: (context, state) {
+        if (state is TimetableLoading) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.primaryBrown),
+          );
+        }
+        if (state is TimetableLoaded) {
+          final periods = state.timetable[_selectedDay] ?? [];
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            itemCount: periods.length,
+            itemBuilder: (context, i) => _PeriodCard(
+              period: periods[i],
+              index: i,
+            ),
+          );
+        }
+        return const SizedBox();
+      },
+    );
+  }
+
+  // ── Student / parent body ──────────────────────────────────────
+
+  Widget _buildStudentParentBody(BuildContext context) {
+    return BlocBuilder<TimetableBloc, TimetableState>(
+      builder: (context, state) {
+        if (state is TimetableLoading) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.primaryBrown),
+          );
+        }
+        if (state is TimetableLoaded) {
+          return Column(
+            children: [
+              _buildDaySelector(context),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  itemCount: state.periodsForSelectedDay.length,
+                  itemBuilder: (context, i) => _PeriodCard(
+                    period: state.periodsForSelectedDay[i],
+                    index: i,
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+        return const SizedBox();
+      },
+    );
+  }
+
+  // ── Shared day selector ────────────────────────────────────────
+
+  Widget _buildDaySelector(BuildContext context) {
     return Container(
       height: 52,
       color: AppColors.surface,
@@ -113,15 +284,17 @@ class _TimetableScreenState extends State<TimetableScreen> {
         itemCount: _days.length,
         itemBuilder: (context, i) {
           final day = _days[i];
-          final isSelected = day == state.selectedDay;
+          final isSelected = day == _selectedDay;
           return GestureDetector(
-            onTap: () => context.read<TimetableBloc>().add(TimetableSelectDay(day)),
+            onTap: () => _onDaySelected(day),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primaryBrown : AppColors.surfaceVariant,
+                color: isSelected
+                    ? AppColors.primaryBrown
+                    : AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Center(
@@ -142,11 +315,105 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 }
 
+// ─────────────────────────── VIEW TOGGLE CHIP ───────────────────────────────
+
+class _ViewChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ViewChip({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primaryBrown : AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primaryBrown.withValues(alpha: 0.25),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : [],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: isSelected ? Colors.white : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────── CLASS BADGE ────────────────────────────────────
+
+class _ClassBadge extends StatelessWidget {
+  final String classGrade;
+  final String section;
+  const _ClassBadge({required this.classGrade, required this.section});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white24,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        'Class $classGrade-$section',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────── PERIOD CARD ────────────────────────────────────
+
 class _PeriodCard extends StatelessWidget {
   final TimetablePeriod period;
   final int index;
-  const _PeriodCard({required this.period, required this.index});
+  /// When set, replaces the "teacher name" label with this prefix (e.g. "Class").
+  final String? subtitleLabel;
 
+  const _PeriodCard({
+    required this.period,
+    required this.index,
+    this.subtitleLabel,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -187,6 +454,8 @@ class _PeriodCard extends StatelessWidget {
 
     final subject = SubjectModel.forName(period.subject);
     final color = subject.color;
+    // For teacher's own schedule, period.teacher holds the class label ("Class 10-A")
+    final subtitle = period.teacher.isNotEmpty ? period.teacher : null;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -242,7 +511,7 @@ class _PeriodCard extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.12),
+                      color: color.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(subject.icon, color: color, size: 18),
@@ -254,9 +523,9 @@ class _PeriodCard extends StatelessWidget {
                       children: [
                         Text(period.subject,
                             style: Theme.of(context).textTheme.titleSmall),
-                        if (period.teacher.isNotEmpty)
+                        if (subtitle != null)
                           Text(
-                            period.teacher,
+                            subtitle,
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
@@ -269,7 +538,8 @@ class _PeriodCard extends StatelessWidget {
                   ),
                   if (period.room.isNotEmpty)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: AppColors.surfaceVariant,
                         borderRadius: BorderRadius.circular(8),
@@ -285,5 +555,4 @@ class _PeriodCard extends StatelessWidget {
       ),
     );
   }
-
 }
