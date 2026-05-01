@@ -89,6 +89,21 @@ class ApiClient {
         'Implement POST $baseUrl$path — see api_client.dart for instructions.');
   }
 
+  /// PATCH [path] with [body]. Returns the decoded response body.
+  Future<Map<String, dynamic>> patch(
+    String path, {
+    Map<String, dynamic>? body,
+  }) async {
+    // try {
+    //   final response = await _dio.patch(path, data: body);
+    //   return response.data as Map<String, dynamic>;
+    // } on DioException catch (e) {
+    //   throw _mapDioError(e);
+    // }
+    throw UnimplementedError(
+        'Implement PATCH $baseUrl$path — see api_client.dart for instructions.');
+  }
+
   /// PUT [path] with [body]. Returns the decoded response body.
   Future<Map<String, dynamic>> put(
     String path, {

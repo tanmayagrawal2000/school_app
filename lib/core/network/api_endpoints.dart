@@ -33,6 +33,8 @@ class ApiEndpoints {
   static const String classStats = '/academic/class-stats';
   static const String timetable = '/academic/timetable';
   static const String homework = '/academic/homework';
+  static String homeworkSubmissions(String hwId) =>
+      '/academic/homework/$hwId/submissions';
 
   // ── Announcements ─────────────────────────────────────────────────────
   static const String announcements = '/announcements';

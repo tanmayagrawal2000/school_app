@@ -53,22 +53,24 @@ class _TimetableScreenState extends State<TimetableScreen> {
   @override
   void initState() {
     super.initState();
+    // HomeBloc may still be loading when IndexedStack builds all tabs at once,
+    // so only configure now if the state is already resolved. Otherwise the
+    // BlocListener in build() will call _setupFromHomeState when HomeLoaded fires.
     final homeState = context.read<HomeBloc>().state;
-    if (homeState is HomeLoaded && homeState.isTeacher &&
-        homeState.currentTeacher != null) {
-      final teacher = homeState.currentTeacher!;
+    if (homeState is HomeLoaded) _setupFromHomeState(homeState);
+  }
+
+  void _setupFromHomeState(HomeLoaded state) {
+    if (state.isTeacher && state.currentTeacher != null) {
+      final teacher = state.currentTeacher!;
       _isTeacherMode = true;
       _hasInchargeClass = teacher.classIncharge.isNotEmpty;
       _teacherSchedule = DummyData.teacherSchedule(teacher.name);
       final (classGrade, section) = teacher.inchargeClassParts;
       _teacherInchargeLabel = 'Class $classGrade-$section';
-      // Pre-fetch the incharge class timetable for the "Class Schedule" tab
       _fetchFor(classGrade, section);
-    } else if (homeState is HomeLoaded && homeState.currentStudent != null) {
-      _fetchFor(homeState.currentStudent!.classGrade,
-          homeState.currentStudent!.section);
-    } else {
-      _fetchFor('10', 'A');
+    } else if (state.currentStudent != null) {
+      _fetchFor(state.currentStudent!.classGrade, state.currentStudent!.section);
     }
   }
 
@@ -116,25 +118,21 @@ class _TimetableScreenState extends State<TimetableScreen> {
           : _buildStudentParentBody(context),
     );
 
-    // For student/parent: react to child switches from HomeBloc
-    if (!_isTeacherMode) {
-      return BlocListener<HomeBloc, HomeState>(
-        listenWhen: (prev, curr) {
-          if (prev is HomeLoaded && curr is HomeLoaded) {
-            return prev.currentStudent?.id != curr.currentStudent?.id;
-          }
-          return false;
-        },
-        listener: (context, state) {
-          if (state is HomeLoaded && state.currentStudent != null) {
-            _fetchFor(state.currentStudent!.classGrade,
-                state.currentStudent!.section);
-          }
-        },
-        child: scaffold,
-      );
-    }
-    return scaffold;
+    // Listen for the initial HomeLoaded event (covers the race where IndexedStack
+    // builds this tab before HomeBloc has finished loading) and for student/parent
+    // child switches.
+    return BlocListener<HomeBloc, HomeState>(
+      listenWhen: (prev, curr) {
+        if (curr is! HomeLoaded) return false;
+        if (prev is! HomeLoaded) return true; // first load
+        if (curr.isTeacher) return false;     // teacher state doesn't change mid-session
+        return prev.currentStudent?.id != curr.currentStudent?.id;
+      },
+      listener: (context, state) {
+        if (state is HomeLoaded) setState(() => _setupFromHomeState(state));
+      },
+      child: scaffold,
+    );
   }
 
   // ── Teacher body ───────────────────────────────────────────────

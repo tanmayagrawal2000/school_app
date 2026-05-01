@@ -7,6 +7,7 @@ import '../../login/login_screen.dart';
 import '../../../data/models/announcement_model.dart';
 import '../../../data/models/student_model.dart';
 import '../../../data/models/teacher_model.dart';
+import '../../../data/models/teacher_class_summary.dart';
 import '../bloc/home_bloc.dart';
 import '../bloc/home_event.dart';
 import '../bloc/home_state.dart';
@@ -15,12 +16,17 @@ import '../../bus_tracking/view/bus_tracking_screen.dart';
 import '../../timetable/view/timetable_screen.dart';
 import '../../results/view/results_screen.dart';
 import '../../attendance/view/attendance_screen.dart';
+import '../../attendance/view/class_attendance_screen.dart';
 import '../../fees/view/fees_screen.dart';
 import '../../homework/view/homework_screen.dart';
 import 'achievements_screen.dart';
 import 'announcement_detail_screen.dart';
 import 'announcements_list_screen.dart';
 import 'tomorrow_prep_screen.dart';
+import 'teacher_pending_hw_screen.dart';
+import '../../homework/view/teacher_homework_screen.dart';
+import 'class_grades_screen.dart';
+import 'subject_performance_screen.dart';
 import 'post_reminder_screen.dart';
 import '../../attendance/view/take_attendance_screen.dart';
 import '../../homework/view/post_homework_screen.dart';
@@ -39,6 +45,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  List<String> _teacherClassKeys = [];
+  String? _teacherName;
 
   bool get _isTeacher => widget.role == UserRole.teacher;
 
@@ -47,14 +55,18 @@ class _HomeScreenState extends State<HomeScreen> {
   //   Student/Parent → [Dashboard, Bus, Timetable]
   int get _timetableTabIndex => _isTeacher ? 3 : 2;
 
-  List<Widget> get _tabs => _isTeacher
+  List<Widget> _buildTabs() => _isTeacher
       ? [
           _DashboardTab(
             role: widget.role,
             onTimetableTap: _goToTimetable,
             onStudentsTap: _goToStudents,
           ),
-          const StudentListScreen(),
+          StudentListScreen(
+            teacherClasses:
+                _teacherClassKeys.isEmpty ? null : _teacherClassKeys,
+            teacherName: _teacherName,
+          ),
           const BusTrackingScreen(),
           TimetableScreen(onBack: _goToDashboard),
         ]
@@ -79,13 +91,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _tabs,
+    return BlocListener<HomeBloc, HomeState>(
+      listener: (context, state) {
+        if (state is HomeLoaded && _isTeacher) {
+          final keys = state.teacherClasses
+              .map((c) => '${c.classGrade}-${c.section}')
+              .toList();
+          final name = state.currentTeacher?.name;
+          if (keys.join() != _teacherClassKeys.join() ||
+              name != _teacherName) {
+            setState(() {
+              _teacherClassKeys = keys;
+              _teacherName = name;
+            });
+          }
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: IndexedStack(
+          index: _currentIndex,
+          children: _buildTabs(),
+        ),
+        bottomNavigationBar: _buildBottomNav(context),
       ),
-      bottomNavigationBar: _buildBottomNav(context),
     );
   }
 
@@ -368,90 +397,23 @@ class _DashboardTab extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     if (state.isTeacher && state.currentTeacher != null) {
-      final teacher = state.currentTeacher!;
-      final (classGrade, section) = teacher.inchargeClassParts;
-      final attendancePct = DummyData.classAttendancePct(classGrade, section);
-      final avgGrade = DummyData.classAvgGrade(classGrade, section);
-      final pendingHW = DummyData.pendingHomeworkCount(classGrade, section);
-
-      final attendanceColor = attendancePct >= 85
-          ? AppColors.success
-          : attendancePct >= 75
-              ? AppColors.saffron
-              : AppColors.error;
-
       return _frame(
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── My Class card ────────────────────────────────────
-              _TeacherClassCard(
-                teacher: teacher,
-                classGrade: classGrade,
-                section: section,
-                todayPeriods: state.todayPeriods,
-                l10n: l10n,
-              ),
-              const SizedBox(height: 12),
-
-              // ── Class Health strip ───────────────────────────────
-              Text(l10n.teacherClassHealth,
+              // ── My Classes ───────────────────────────────────────
+              Text(l10n.teacherMyClasses,
                   style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 10),
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                        color: AppColors.shadow,
-                        blurRadius: 8,
-                        offset: const Offset(0, 2))
-                  ],
-                ),
-                child: IntrinsicHeight(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _MonitorCell(
-                          icon: Icons.how_to_reg_outlined,
-                          label: l10n.teacherClassAttendance,
-                          value: '${attendancePct.toStringAsFixed(0)}%',
-                          color: attendanceColor,
-                          onTap: () {},
-                        ),
-                      ),
-                      const VerticalDivider(
-                          width: 1, thickness: 1, color: AppColors.divider),
-                      Expanded(
-                        child: _MonitorCell(
-                          icon: Icons.school_outlined,
-                          label: l10n.teacherAvgGrade,
-                          value: avgGrade,
-                          color: AppColors.info,
-                          onTap: () {},
-                        ),
-                      ),
-                      const VerticalDivider(
-                          width: 1, thickness: 1, color: AppColors.divider),
-                      Expanded(
-                        child: _MonitorCell(
-                          icon: Icons.library_books_outlined,
-                          label: l10n.teacherPendingHW,
-                          value: '$pendingHW',
-                          color: pendingHW > 0
-                              ? AppColors.saffron
-                              : AppColors.success,
-                          onTap: () {},
-                        ),
-                      ),
-                    ],
-                  ),
+              ...state.teacherClasses.map(
+                (classInfo) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _TeacherClassCard(classInfo: classInfo, l10n: l10n),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 8),
 
               // ── School Overview (condensed) ──────────────────────
               Text(l10n.teacherSchoolOverview,
@@ -678,9 +640,6 @@ class _DashboardTab extends StatelessWidget {
     if (state.isTeacher && state.currentTeacher != null) {
       final teacher = state.currentTeacher!;
       final (classGrade, section) = teacher.inchargeClassParts;
-      final subjects = teacher.subject.contains('/')
-          ? teacher.subject.split('/').map((s) => s.trim()).toList()
-          : [teacher.subject];
 
       final actions = [
         _QuickAction(
@@ -703,9 +662,10 @@ class _DashboardTab extends StatelessWidget {
             context,
             MaterialPageRoute(
               builder: (_) => PostHomeworkScreen(
-                  classGrade: classGrade,
-                  section: section,
-                  subjects: subjects),
+                  subject: teacher.subject,
+                  classes: state.teacherClasses
+                      .map((c) => c.classLabel)
+                      .toList()),
             ),
           ),
         ),
@@ -717,9 +677,21 @@ class _DashboardTab extends StatelessWidget {
             context,
             MaterialPageRoute(
               builder: (_) => PostReminderScreen(
-                  classGrade: classGrade,
-                  section: section,
-                  subjects: subjects),
+                  classes: state.teacherClasses
+                      .map((c) => c.classLabel)
+                      .toList()),
+            ),
+          ),
+        ),
+        _QuickAction(
+          icon: Icons.assignment_outlined,
+          label: l10n.teacherMyHomework,
+          color: AppColors.lotusPink,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  TeacherHomeworkScreen(teacherName: teacher.name),
             ),
           ),
         ),
@@ -728,12 +700,6 @@ class _DashboardTab extends StatelessWidget {
           label: l10n.navStudents,
           color: AppColors.primaryBrown,
           onTap: () => onStudentsTap?.call(),
-        ),
-        _QuickAction(
-          icon: Icons.event_note_outlined,
-          label: l10n.navTimetable,
-          color: AppColors.lotusPink,
-          onTap: () => onTimetableTap(),
         ),
         _QuickAction(
           icon: Icons.campaign_outlined,
@@ -1585,22 +1551,41 @@ class _UpcomingOverviewCard extends StatelessWidget {
 // ─────────────────────── TEACHER CLASS CARD ─────────────────────────────────
 
 class _TeacherClassCard extends StatelessWidget {
-  final TeacherModel teacher;
-  final String classGrade;
-  final String section;
-  final int todayPeriods;
+  final TeacherClassSummary classInfo;
   final AppLocalizations l10n;
 
-  const _TeacherClassCard({
-    required this.teacher,
-    required this.classGrade,
-    required this.section,
-    required this.todayPeriods,
-    required this.l10n,
-  });
+  const _TeacherClassCard({required this.classInfo, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
+    return classInfo.isIncharge
+        ? _InchargeCard(classInfo: classInfo, l10n: l10n)
+        : _SubjectTeacherCard(classInfo: classInfo, l10n: l10n);
+  }
+}
+
+// ── Incharge class card (brown gradient, full metrics) ───────────────────────
+
+class _InchargeCard extends StatelessWidget {
+  final TeacherClassSummary classInfo;
+  final AppLocalizations l10n;
+  const _InchargeCard({required this.classInfo, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final attendancePct = classInfo.attendancePercent ?? 0;
+    final attendanceColor = attendancePct >= 85
+        ? AppColors.goldLight
+        : attendancePct >= 75
+            ? AppColors.saffronLight
+            : AppColors.saffron;
+    final avgPct = classInfo.classStats.classOverallAverage;
+    final avgColor = avgPct >= 80
+        ? AppColors.goldLight
+        : avgPct >= 60
+            ? AppColors.saffronLight
+            : AppColors.saffron;
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -1618,65 +1603,389 @@ class _TeacherClassCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.teacherClassIncharge,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        letterSpacing: 0.5,
+          // ── Header row ──────────────────────────────────────────
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.teacherClassIncharge.toUpperCase(),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.75),
+                            letterSpacing: 0.8,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      classInfo.classLabel,
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Class $classGrade-$section',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
+                      child: Text(
+                        classInfo.subject,
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    teacher.subject,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              ),
+              const SizedBox(width: 16),
+              Column(
+                children: [
+                  Text(
+                    '${classInfo.todayPeriods}',
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
                           color: Colors.white,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w900,
                         ),
+                  ),
+                  Text(
+                    "Today's\nPeriods",
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.75),
+                        ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          // ── Stats row ────────────────────────────────────────────
+          const SizedBox(height: 14),
+          Divider(color: Colors.white.withValues(alpha: 0.2), height: 1),
+          const SizedBox(height: 14),
+          IntrinsicHeight(
+            child: Row(
+              children: [
+                Expanded(
+                  child: _InchargeStatCell(
+                    icon: Icons.how_to_reg_outlined,
+                    label: l10n.teacherClassAttendance,
+                    value: '${attendancePct.toStringAsFixed(0)}%',
+                    color: attendanceColor,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ClassAttendanceScreen(
+                          classGrade: classInfo.classGrade,
+                          section: classInfo.section,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                VerticalDivider(
+                    width: 1,
+                    thickness: 1,
+                    color: Colors.white.withValues(alpha: 0.2)),
+                Expanded(
+                  child: _InchargeStatCell(
+                    icon: Icons.school_outlined,
+                    label: l10n.teacherAvgGrade,
+                    value: '${avgPct.toStringAsFixed(1)}%',
+                    color: avgColor,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ClassGradesScreen(
+                          classGrade: classInfo.classGrade,
+                          section: classInfo.section,
+                          stats: classInfo.classStats,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                VerticalDivider(
+                    width: 1,
+                    thickness: 1,
+                    color: Colors.white.withValues(alpha: 0.2)),
+                Expanded(
+                  child: _InchargeStatCell(
+                    icon: Icons.library_books_outlined,
+                    label: l10n.teacherPendingHW,
+                    value: '${classInfo.pendingHomework}',
+                    color: classInfo.pendingHomework > 0
+                        ? AppColors.gold
+                        : Colors.white,
+                    onTap: classInfo.pendingHomework > 0
+                        ? () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TeacherPendingHWScreen(
+                                  classGrade: classInfo.classGrade,
+                                  section: classInfo.section,
+                                ),
+                              ),
+                            )
+                        : null,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 16),
-          Column(
-            children: [
-              Text(
-                '$todayPeriods',
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                    ),
-              ),
-              Text(
-                "Today's\nPeriods",
+        ],
+      ),
+    );
+  }
+}
+
+class _InchargeStatCell extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+  final VoidCallback? onTap;
+  const _InchargeStatCell(
+      {required this.icon,
+      required this.label,
+      required this.value,
+      required this.color,
+      this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(height: 4),
+            Text(value,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.w700,
+                    )),
+            Text(label,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.75),
-                    ),
-              ),
-            ],
-          ),
+                      color: Colors.white.withValues(alpha: 0.7),
+                    )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Subject-teacher card (surface card, subject-specific metrics) ─────────────
+
+class _SubjectTeacherCard extends StatelessWidget {
+  final TeacherClassSummary classInfo;
+  final AppLocalizations l10n;
+  const _SubjectTeacherCard({required this.classInfo, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final subjectAvg = classInfo.subjectAvg;
+    final avgColor = subjectAvg >= 80
+        ? AppColors.success
+        : subjectAvg >= 60
+            ? AppColors.saffron
+            : AppColors.error;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border(
+          left: BorderSide(color: AppColors.primaryBrown, width: 4),
+        ),
+        boxShadow: [
+          BoxShadow(
+              color: AppColors.shadow, blurRadius: 8, offset: const Offset(0, 2))
         ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header row ────────────────────────────────────────
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.teacherSubjectTeacher.toUpperCase(),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: AppColors.primaryBrown,
+                              letterSpacing: 0.8,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        classInfo.classLabel,
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryBrown.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          classInfo.subject,
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelMedium
+                              ?.copyWith(
+                                color: AppColors.primaryBrown,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  children: [
+                    Text(
+                      '${classInfo.todayPeriods}',
+                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                            color: AppColors.primaryBrown,
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                    Text(
+                      "Today's\nPeriods",
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            // ── Stats row ──────────────────────────────────────────
+            const SizedBox(height: 12),
+            const Divider(color: AppColors.divider, height: 1),
+            const SizedBox(height: 12),
+            IntrinsicHeight(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _SubjectStatCell(
+                      icon: Icons.bar_chart_outlined,
+                      label: l10n.teacherSubjectAvg,
+                      value: '${subjectAvg.toStringAsFixed(1)}%',
+                      color: avgColor,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SubjectPerformanceScreen(
+                            classGrade: classInfo.classGrade,
+                            section: classInfo.section,
+                            subject: classInfo.subject,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const VerticalDivider(
+                      width: 1, thickness: 1, color: AppColors.divider),
+                  Expanded(
+                    child: _SubjectStatCell(
+                      icon: Icons.library_books_outlined,
+                      label: l10n.teacherPendingHW,
+                      value: '${classInfo.pendingHomework}',
+                      color: classInfo.pendingHomework > 0
+                          ? AppColors.saffron
+                          : AppColors.success,
+                      onTap: classInfo.pendingHomework > 0
+                          ? () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => TeacherPendingHWScreen(
+                                    classGrade: classInfo.classGrade,
+                                    section: classInfo.section,
+                                    subjectFilter: classInfo.subject,
+                                  ),
+                                ),
+                              )
+                          : null,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SubjectStatCell extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+  final VoidCallback? onTap;
+  const _SubjectStatCell(
+      {required this.icon,
+      required this.label,
+      required this.value,
+      required this.color,
+      this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(height: 4),
+            Text(value,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.w700,
+                    )),
+            Text(label,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    )),
+          ],
+        ),
       ),
     );
   }

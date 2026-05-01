@@ -15,7 +15,7 @@ class HomeworkBloc extends Bloc<HomeworkEvent, HomeworkState> {
     emit(HomeworkLoading());
     try {
       final items = await _homeworkRepository.fetchHomework(
-          event.classGrade, event.section);
+          event.classGrade, event.section, event.studentId);
       emit(HomeworkLoaded(allItems: items));
     } catch (_) {
       emit(const HomeworkError('Failed to load homework.'));

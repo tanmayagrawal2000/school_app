@@ -3,6 +3,7 @@ import '../../../core/enums/user_role.dart';
 import '../../../data/models/announcement_model.dart';
 import '../../../data/models/student_model.dart';
 import '../../../data/models/teacher_model.dart';
+import '../../../data/models/teacher_class_summary.dart';
 
 abstract class HomeState extends Equatable {
   const HomeState();
@@ -34,6 +35,9 @@ class HomeLoaded extends HomeState {
   // Set only for teacher role — the logged-in teacher
   final TeacherModel? currentTeacher;
 
+  // Non-empty only for teacher role — one entry per class the teacher is involved with
+  final List<TeacherClassSummary> teacherClasses;
+
   final Set<String> readIds;
 
   const HomeLoaded({
@@ -47,6 +51,7 @@ class HomeLoaded extends HomeState {
     this.children = const [],
     this.parentName,
     this.currentTeacher,
+    this.teacherClasses = const [],
     this.readIds = const {},
   });
 
@@ -65,6 +70,7 @@ class HomeLoaded extends HomeState {
         children: children,
         parentName: parentName,
         currentTeacher: currentTeacher,
+        teacherClasses: teacherClasses,
         readIds: {...readIds, id},
       );
 
@@ -85,6 +91,7 @@ class HomeLoaded extends HomeState {
         children: children,
         parentName: parentName,
         currentTeacher: currentTeacher,
+        teacherClasses: teacherClasses,
         readIds: readIds,
       );
 
@@ -100,6 +107,7 @@ class HomeLoaded extends HomeState {
         children,
         parentName,
         currentTeacher,
+        teacherClasses,
         readIds,
       ];
 }

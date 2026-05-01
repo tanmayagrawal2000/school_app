@@ -8,8 +8,13 @@ import '../homework_repository.dart';
 class DummyHomeworkRepository implements HomeworkRepository {
   @override
   Future<List<HomeworkItem>> fetchHomework(
-      String classGrade, String section) async {
+      String classGrade, String section, String studentId) async {
     await Future.delayed(const Duration(milliseconds: 350));
-    return DummyData.homeworkFor(classGrade, section);
+    return DummyData.homeworkFor(classGrade, section, studentId: studentId);
+  }
+
+  @override
+  Future<void> saveSubmissions(String hwId, Set<String> submittedIds) async {
+    DummyData.setSubmissions(hwId, submittedIds);
   }
 }

@@ -37,6 +37,7 @@ import 'features/bus_tracking/bloc/bus_bloc.dart';
 import 'features/timetable/bloc/timetable_bloc.dart';
 import 'features/attendance/bloc/attendance_bloc.dart';
 import 'features/splash/splash_screen.dart';
+import 'core/widgets/connectivity_banner.dart';
 
 class SGMSchoolApp extends StatelessWidget {
   const SGMSchoolApp({super.key});
@@ -93,6 +94,8 @@ class SGMSchoolApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
           home: const SplashScreen(),
+          builder: (context, child) =>
+              ConnectivityBanner(child: child ?? const SizedBox.shrink()),
         ),
       ),
     );

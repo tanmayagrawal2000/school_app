@@ -449,16 +449,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teacherMyClass => 'My Class';
 
   @override
+  String get teacherMyClasses => 'My Classes';
+
+  @override
   String get teacherClassIncharge => 'Class Incharge';
+
+  @override
+  String get teacherSubjectTeacher => 'Subject Teacher';
 
   @override
   String get teacherClassHealth => 'Class Health';
 
   @override
-  String get teacherClassAttendance => 'Attendance';
+  String get teacherClassAttendance => 'Avg Attendance';
 
   @override
   String get teacherAvgGrade => 'Avg. Grade';
+
+  @override
+  String get teacherSubjectAvg => 'Subject Avg.';
 
   @override
   String get teacherPendingHW => 'Pending HW';
@@ -467,13 +476,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teacherSchoolOverview => 'School Overview';
 
   @override
-  String get teacherTakeAttendance => 'Attendance';
+  String get teacherTakeAttendance => 'Take Attendance';
+
+  @override
+  String get teacherMyHomework => 'My HW';
 
   @override
   String get teacherPostHomework => 'Post HW';
 
   @override
-  String get teacherPostReminder => 'Reminder';
+  String get teacherPostReminder => 'Post Reminder';
 
   @override
   String get teacherSubmitAttendance => 'Submit Attendance';
@@ -495,6 +507,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teacherSelectSubject => 'Select Subject';
+
+  @override
+  String get teacherSelectClass => 'Select Class';
 
   @override
   String get teacherHomeworkTitleLabel => 'Title';

@@ -4,15 +4,11 @@ import '../../../data/models/class_reminder_model.dart';
 import 'package:sgm_school_app/l10n/app_localizations.dart';
 
 class PostReminderScreen extends StatefulWidget {
-  final String classGrade;
-  final String section;
-  final List<String> subjects;
+  final List<String> classes;
 
   const PostReminderScreen({
     super.key,
-    required this.classGrade,
-    required this.section,
-    required this.subjects,
+    required this.classes,
   });
 
   @override
@@ -23,8 +19,9 @@ class _PostReminderScreenState extends State<PostReminderScreen> {
   final _formKey = GlobalKey<FormState>();
   final _messageController = TextEditingController();
 
-  String? _selectedSubject;
+  String? _selectedClass;
   ReminderType _reminderType = ReminderType.bring;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -32,17 +29,34 @@ class _PostReminderScreenState extends State<PostReminderScreen> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.teacherReminderPosted),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-    Navigator.pop(context);
+    setState(() => _isSubmitting = true);
+    try {
+      // TODO: call reminder repository when backend is ready
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.teacherReminderPosted),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.pop(context);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to post reminder. Please try again.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -51,24 +65,7 @@ class _PostReminderScreenState extends State<PostReminderScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.teacherPostReminderTitle,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-            Text(
-              'Class ${widget.classGrade}-${widget.section}',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.85),
-                  ),
-            ),
-          ],
-        ),
+        title: Text(l10n.teacherPostReminderTitle),
         backgroundColor: AppColors.primaryBrown,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -78,18 +75,18 @@ class _PostReminderScreenState extends State<PostReminderScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Subject dropdown
-            _SectionLabel(l10n.teacherSelectSubject),
+            // Class dropdown
+            _SectionLabel(l10n.teacherSelectClass),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _selectedSubject,
+              value: _selectedClass,
               decoration: _inputDecoration(''),
-              hint: const Text('Choose a subject'),
-              items: widget.subjects
-                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+              hint: const Text('Choose a class'),
+              items: widget.classes
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                   .toList(),
-              onChanged: (val) => setState(() => _selectedSubject = val),
-              validator: (v) => v == null ? 'Please select a subject' : null,
+              onChanged: (val) => setState(() => _selectedClass = val),
+              validator: (v) => v == null ? 'Please select a class' : null,
             ),
             const SizedBox(height: 20),
 
@@ -149,7 +146,7 @@ class _PostReminderScreenState extends State<PostReminderScreen> {
             const SizedBox(height: 32),
 
             ElevatedButton(
-              onPressed: _submit,
+              onPressed: _isSubmitting ? null : _submit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryBrown,
                 foregroundColor: Colors.white,
@@ -157,11 +154,18 @@ class _PostReminderScreenState extends State<PostReminderScreen> {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
-              child: Text(
-                l10n.teacherPostReminderTitle,
-                style:
-                    const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-              ),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(
+                      l10n.teacherPostReminderTitle,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 15),
+                    ),
             ),
           ],
         ),

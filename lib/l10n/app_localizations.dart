@@ -934,11 +934,23 @@ abstract class AppLocalizations {
   /// **'My Class'**
   String get teacherMyClass;
 
+  /// No description provided for @teacherMyClasses.
+  ///
+  /// In en, this message translates to:
+  /// **'My Classes'**
+  String get teacherMyClasses;
+
   /// No description provided for @teacherClassIncharge.
   ///
   /// In en, this message translates to:
   /// **'Class Incharge'**
   String get teacherClassIncharge;
+
+  /// No description provided for @teacherSubjectTeacher.
+  ///
+  /// In en, this message translates to:
+  /// **'Subject Teacher'**
+  String get teacherSubjectTeacher;
 
   /// No description provided for @teacherClassHealth.
   ///
@@ -949,7 +961,7 @@ abstract class AppLocalizations {
   /// No description provided for @teacherClassAttendance.
   ///
   /// In en, this message translates to:
-  /// **'Attendance'**
+  /// **'Avg Attendance'**
   String get teacherClassAttendance;
 
   /// No description provided for @teacherAvgGrade.
@@ -957,6 +969,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Avg. Grade'**
   String get teacherAvgGrade;
+
+  /// No description provided for @teacherSubjectAvg.
+  ///
+  /// In en, this message translates to:
+  /// **'Subject Avg.'**
+  String get teacherSubjectAvg;
 
   /// No description provided for @teacherPendingHW.
   ///
@@ -973,8 +991,14 @@ abstract class AppLocalizations {
   /// No description provided for @teacherTakeAttendance.
   ///
   /// In en, this message translates to:
-  /// **'Attendance'**
+  /// **'Take Attendance'**
   String get teacherTakeAttendance;
+
+  /// No description provided for @teacherMyHomework.
+  ///
+  /// In en, this message translates to:
+  /// **'My HW'**
+  String get teacherMyHomework;
 
   /// No description provided for @teacherPostHomework.
   ///
@@ -985,7 +1009,7 @@ abstract class AppLocalizations {
   /// No description provided for @teacherPostReminder.
   ///
   /// In en, this message translates to:
-  /// **'Reminder'**
+  /// **'Post Reminder'**
   String get teacherPostReminder;
 
   /// No description provided for @teacherSubmitAttendance.
@@ -1029,6 +1053,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select Subject'**
   String get teacherSelectSubject;
+
+  /// No description provided for @teacherSelectClass.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Class'**
+  String get teacherSelectClass;
 
   /// No description provided for @teacherHomeworkTitleLabel.
   ///

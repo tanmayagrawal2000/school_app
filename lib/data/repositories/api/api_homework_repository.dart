@@ -18,9 +18,21 @@ class ApiHomeworkRepository implements HomeworkRepository {
 
   @override
   Future<List<HomeworkItem>> fetchHomework(
-      String classGrade, String section) async {
+      String classGrade, String section, String studentId) async {
     final list = await _client.getList(ApiEndpoints.homework,
-        queryParams: {'classGrade': classGrade, 'section': section});
+        queryParams: {
+          'classGrade': classGrade,
+          'section': section,
+          'studentId': studentId,
+        });
     return list.map(HomeworkItem.fromJson).toList();
+  }
+
+  @override
+  Future<void> saveSubmissions(String hwId, Set<String> submittedIds) async {
+    await _client.put(
+      ApiEndpoints.homeworkSubmissions(hwId),
+      body: {'submittedStudentIds': submittedIds.toList()},
+    );
   }
 }

@@ -5,15 +5,13 @@ import '../../../data/models/homework_model.dart';
 import 'package:sgm_school_app/l10n/app_localizations.dart';
 
 class PostHomeworkScreen extends StatefulWidget {
-  final String classGrade;
-  final String section;
-  final List<String> subjects;
+  final String subject;
+  final List<String> classes;
 
   const PostHomeworkScreen({
     super.key,
-    required this.classGrade,
-    required this.section,
-    required this.subjects,
+    required this.subject,
+    required this.classes,
   });
 
   @override
@@ -25,9 +23,10 @@ class _PostHomeworkScreenState extends State<PostHomeworkScreen> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
 
-  String? _selectedSubject;
+  String? _selectedClass;
   DateTime? _dueDate;
   HomeworkPriority _priority = HomeworkPriority.medium;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -52,7 +51,7 @@ class _PostHomeworkScreenState extends State<PostHomeworkScreen> {
     if (picked != null) setState(() => _dueDate = picked);
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_dueDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -64,15 +63,32 @@ class _PostHomeworkScreenState extends State<PostHomeworkScreen> {
       );
       return;
     }
-    final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.teacherHomeworkPosted),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-    Navigator.pop(context);
+    setState(() => _isSubmitting = true);
+    try {
+      // TODO: call homework repository when backend is ready
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.teacherHomeworkPosted),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.pop(context);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to post homework. Please try again.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -92,7 +108,7 @@ class _PostHomeworkScreenState extends State<PostHomeworkScreen> {
                   ),
             ),
             Text(
-              'Class ${widget.classGrade}-${widget.section}',
+              widget.subject,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: Colors.white.withValues(alpha: 0.85),
                   ),
@@ -108,18 +124,18 @@ class _PostHomeworkScreenState extends State<PostHomeworkScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Subject dropdown
-            _SectionLabel(l10n.teacherSelectSubject),
+            // Class dropdown
+            _SectionLabel(l10n.teacherSelectClass),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _selectedSubject,
+              value: _selectedClass,
               decoration: _inputDecoration(context, ''),
-              hint: const Text('Choose a subject'),
-              items: widget.subjects
-                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+              hint: const Text('Choose a class'),
+              items: widget.classes
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                   .toList(),
-              onChanged: (val) => setState(() => _selectedSubject = val),
-              validator: (v) => v == null ? 'Please select a subject' : null,
+              onChanged: (val) => setState(() => _selectedClass = val),
+              validator: (v) => v == null ? 'Please select a class' : null,
             ),
             const SizedBox(height: 20),
 
@@ -209,7 +225,7 @@ class _PostHomeworkScreenState extends State<PostHomeworkScreen> {
             const SizedBox(height: 32),
 
             ElevatedButton(
-              onPressed: _submit,
+              onPressed: _isSubmitting ? null : _submit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryBrown,
                 foregroundColor: Colors.white,
@@ -217,11 +233,18 @@ class _PostHomeworkScreenState extends State<PostHomeworkScreen> {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
-              child: Text(
-                l10n.teacherPostHomeworkTitle,
-                style:
-                    const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-              ),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(
+                      l10n.teacherPostHomeworkTitle,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 15),
+                    ),
             ),
           ],
         ),

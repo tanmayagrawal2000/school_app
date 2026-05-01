@@ -48,7 +48,7 @@ class _TomorrowPrepScreenState extends State<TomorrowPrepScreen> {
     final timetableMap = await timetableRepo.fetchTimetable(
         widget.student.classGrade, widget.student.section);
     final homework = await homeworkRepo.fetchHomework(
-        widget.student.classGrade, widget.student.section);
+        widget.student.classGrade, widget.student.section, widget.student.id);
     if (!mounted) return;
 
     // Show homework due today or tomorrow so students can prepare in advance

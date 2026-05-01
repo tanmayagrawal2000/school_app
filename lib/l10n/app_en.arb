@@ -457,17 +457,26 @@
   "teacherMyClass": "My Class",
   "@teacherMyClass": {},
 
+  "teacherMyClasses": "My Classes",
+  "@teacherMyClasses": {},
+
   "teacherClassIncharge": "Class Incharge",
   "@teacherClassIncharge": {},
+
+  "teacherSubjectTeacher": "Subject Teacher",
+  "@teacherSubjectTeacher": {},
 
   "teacherClassHealth": "Class Health",
   "@teacherClassHealth": {},
 
-  "teacherClassAttendance": "Attendance",
+  "teacherClassAttendance": "Avg Attendance",
   "@teacherClassAttendance": {},
 
   "teacherAvgGrade": "Avg. Grade",
   "@teacherAvgGrade": {},
+
+  "teacherSubjectAvg": "Subject Avg.",
+  "@teacherSubjectAvg": {},
 
   "teacherPendingHW": "Pending HW",
   "@teacherPendingHW": {},
@@ -475,13 +484,16 @@
   "teacherSchoolOverview": "School Overview",
   "@teacherSchoolOverview": {},
 
-  "teacherTakeAttendance": "Attendance",
+  "teacherTakeAttendance": "Take Attendance",
   "@teacherTakeAttendance": {},
+
+  "teacherMyHomework": "My HW",
+  "@teacherMyHomework": {},
 
   "teacherPostHomework": "Post HW",
   "@teacherPostHomework": {},
 
-  "teacherPostReminder": "Reminder",
+  "teacherPostReminder": "Post Reminder",
   "@teacherPostReminder": {},
 
   "teacherSubmitAttendance": "Submit Attendance",
@@ -504,6 +516,9 @@
 
   "teacherSelectSubject": "Select Subject",
   "@teacherSelectSubject": {},
+
+  "teacherSelectClass": "Select Class",
+  "@teacherSelectClass": {},
 
   "teacherHomeworkTitleLabel": "Title",
   "@teacherHomeworkTitleLabel": {},

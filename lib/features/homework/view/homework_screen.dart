@@ -20,7 +20,9 @@ class HomeworkScreen extends StatelessWidget {
     return BlocProvider(
       create: (ctx) => HomeworkBloc(ctx.read<HomeworkRepository>())
         ..add(HomeworkFetch(
-            classGrade: student.classGrade, section: student.section)),
+            classGrade: student.classGrade,
+            section: student.section,
+            studentId: student.id)),
       child: _HomeworkView(student: student),
     );
   }

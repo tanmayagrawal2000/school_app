@@ -6,6 +6,7 @@ import '../../../data/models/teacher_model.dart';
 import '../../../data/repositories/announcement_repository.dart';
 import '../../../data/repositories/student_repository.dart';
 import '../../../data/repositories/timetable_repository.dart';
+import '../../../data/models/teacher_class_summary.dart';
 import 'home_event.dart';
 import 'home_state.dart';
 
@@ -34,12 +35,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     int todayPeriods = 0;
     List<StudentModel> children = [];
     String? parentName;
+    List<TeacherClassSummary> teacherClasses = [];
 
     if (event.role == UserRole.teacher) {
       currentTeacher = DummyData.currentTeacher;
-      final (classGrade, section) = currentTeacher.inchargeClassParts;
-      final timetable = await _timetableRepo.fetchTimetable(classGrade, section);
-      todayPeriods = _timetableRepo.periodsCountForDay(timetable, _todayName());
+      teacherClasses = DummyData.teacherClassSummaries(currentTeacher, _todayName());
+      todayPeriods = teacherClasses.fold(0, (sum, c) => sum + c.todayPeriods);
     } else if (event.role == UserRole.parent) {
       parentName = DummyData.parentFor('p001')?.name;
       children = await _studentRepo.fetchChildrenForParent('p001');
@@ -79,6 +80,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       children: children,
       parentName: parentName,
       currentTeacher: currentTeacher,
+      teacherClasses: teacherClasses,
     ));
   }
 

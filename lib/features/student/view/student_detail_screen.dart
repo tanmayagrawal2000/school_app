@@ -8,10 +8,16 @@ import '../../../data/models/attendance_model.dart';
 import '../bloc/student_bloc.dart';
 import '../bloc/student_event.dart';
 import '../bloc/student_state.dart';
+import 'award_badge_screen.dart';
 
 class StudentDetailScreen extends StatefulWidget {
   final String studentId;
-  const StudentDetailScreen({super.key, required this.studentId});
+  final String? teacherName;
+  const StudentDetailScreen({
+    super.key,
+    required this.studentId,
+    this.teacherName,
+  });
 
   @override
   State<StudentDetailScreen> createState() => _StudentDetailScreenState();
@@ -60,10 +66,31 @@ class _StudentDetailScreenState extends State<StudentDetailScreen>
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: widget.teacherName != null
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AwardBadgeScreen(
+                      studentId: student.id,
+                      studentName: student.name,
+                      teacherName: widget.teacherName!,
+                    ),
+                  ),
+                );
+              },
+              backgroundColor: AppColors.primaryBrown,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.workspace_premium_outlined),
+              label: const Text('Award Badge',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+            )
+          : null,
       body: NestedScrollView(
         headerSliverBuilder: (context, _) => [
           SliverAppBar(
-            expandedHeight: 220,
+            expandedHeight: 280,
             pinned: true,
             backgroundColor: AppColors.primaryBrown,
             iconTheme: const IconThemeData(color: Colors.white),
@@ -108,7 +135,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen>
                           _HeaderBadge(label: student.gender, icon: Icons.person_outline),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 60),
                     ],
                   ),
                 ),
@@ -369,24 +396,32 @@ class _AttendanceTabState extends State<_AttendanceTab> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 8, offset: const Offset(0, 2))],
           ),
+          padding: const EdgeInsets.only(bottom: 12),
           child: TableCalendar(
-            firstDay: DateTime(2025, 1, 1),
-            lastDay: DateTime(2025, 12, 31),
+            firstDay: DateTime(2025, 4, 1),
+            lastDay: DateTime(2026, 6, 30),
             focusedDay: _focusedDay,
             onPageChanged: (d) => setState(() => _focusedDay = d),
+            daysOfWeekHeight: 28,
+            rowHeight: 44,
             headerStyle: HeaderStyle(
               formatButtonVisible: false,
               titleCentered: true,
               titleTextStyle: Theme.of(context).textTheme.titleMedium!,
-              headerPadding: const EdgeInsets.symmetric(vertical: 8),
+              headerPadding: const EdgeInsets.symmetric(vertical: 10),
               leftChevronIcon: const Icon(Icons.chevron_left, color: AppColors.primaryBrown),
               rightChevronIcon: const Icon(Icons.chevron_right, color: AppColors.primaryBrown),
+            ),
+            daysOfWeekStyle: const DaysOfWeekStyle(
+              weekdayStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+              weekendStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.error),
             ),
             calendarStyle: const CalendarStyle(
               defaultTextStyle: TextStyle(fontSize: 13),
               weekendTextStyle: TextStyle(fontSize: 13, color: AppColors.error),
               outsideTextStyle: TextStyle(fontSize: 13, color: AppColors.textHint),
               todayDecoration: BoxDecoration(color: AppColors.primaryBrown, shape: BoxShape.circle),
+              cellMargin: EdgeInsets.all(5),
             ),
             calendarBuilders: CalendarBuilders(
               defaultBuilder: (context, day, focusedDay) {

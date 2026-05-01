@@ -9,9 +9,14 @@ abstract class HomeworkEvent extends Equatable {
 class HomeworkFetch extends HomeworkEvent {
   final String classGrade;
   final String section;
-  const HomeworkFetch({required this.classGrade, required this.section});
+  final String studentId;
+  const HomeworkFetch({
+    required this.classGrade,
+    required this.section,
+    required this.studentId,
+  });
   @override
-  List<Object?> get props => [classGrade, section];
+  List<Object?> get props => [classGrade, section, studentId];
 }
 
 class HomeworkFilterChanged extends HomeworkEvent {
