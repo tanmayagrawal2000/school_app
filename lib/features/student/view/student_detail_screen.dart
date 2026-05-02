@@ -9,6 +9,10 @@ import '../bloc/student_bloc.dart';
 import '../bloc/student_event.dart';
 import '../bloc/student_state.dart';
 import 'award_badge_screen.dart';
+import '../../home/view/achievements_screen.dart';
+import '../../achievements/bloc/badge_bloc.dart';
+import '../../achievements/bloc/badge_event.dart';
+import '../../../data/repositories/badge_repository.dart';
 
 class StudentDetailScreen extends StatefulWidget {
   final String studentId;
@@ -26,16 +30,25 @@ class StudentDetailScreen extends StatefulWidget {
 class _StudentDetailScreenState extends State<StudentDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late final BadgeBloc _badgeBloc;
+  bool _onBadgesTab = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
+    _tabController.addListener(() {
+      final onBadges = _tabController.index == 4;
+      if (onBadges != _onBadgesTab) setState(() => _onBadgesTab = onBadges);
+    });
+    _badgeBloc = BadgeBloc(context.read<BadgeRepository>())
+      ..add(BadgesFetch(widget.studentId));
     context.read<StudentBloc>().add(StudentFetchDetail(widget.studentId));
   }
 
   @override
   void dispose() {
+    _badgeBloc.close();
     _tabController.dispose();
     super.dispose();
   }
@@ -66,10 +79,10 @@ class _StudentDetailScreenState extends State<StudentDetailScreen>
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: widget.teacherName != null
+      floatingActionButton: widget.teacherName != null && _onBadgesTab
           ? FloatingActionButton.extended(
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => AwardBadgeScreen(
@@ -79,6 +92,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen>
                     ),
                   ),
                 );
+                _badgeBloc.add(BadgesFetch(widget.studentId));
               },
               backgroundColor: AppColors.primaryBrown,
               foregroundColor: Colors.white,
@@ -153,6 +167,7 @@ class _StudentDetailScreenState extends State<StudentDetailScreen>
                 Tab(text: 'Results'),
                 Tab(text: 'Attendance'),
                 Tab(text: 'Fee'),
+                Tab(text: 'Badges'),
               ],
             ),
           ),
@@ -164,6 +179,11 @@ class _StudentDetailScreenState extends State<StudentDetailScreen>
             _ResultsTab(student: student),
             _AttendanceTab(attendance: attendance),
             _FeeTab(student: student),
+            BadgesTabView(
+              badgeBloc: _badgeBloc,
+              bottomPadding: widget.teacherName != null ? 72.0 : 0.0,
+              isTeacher: widget.teacherName != null,
+            ),
           ],
         ),
       ),

@@ -12,3 +12,10 @@ class BadgesFetch extends BadgeEvent {
   @override
   List<Object?> get props => [studentId];
 }
+
+class BadgeRevoke extends BadgeEvent {
+  final String badgeId;
+  const BadgeRevoke(this.badgeId);
+  @override
+  List<Object?> get props => [badgeId];
+}

@@ -27,6 +27,11 @@ class BadgesLoaded extends BadgeState {
     }
   }
 
+  BadgesLoaded copyWithout(String badgeId) => BadgesLoaded(
+        badgeTypes: badgeTypes,
+        earnedBadges: earnedBadges.where((b) => b.id != badgeId).toList(),
+      );
+
   @override
   List<Object?> get props => [badgeTypes, earnedBadges];
 }

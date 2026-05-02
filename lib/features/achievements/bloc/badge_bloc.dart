@@ -8,6 +8,7 @@ class BadgeBloc extends Bloc<BadgeEvent, BadgeState> {
 
   BadgeBloc(this._badgeRepository) : super(BadgesInitial()) {
     on<BadgesFetch>(_onFetch);
+    on<BadgeRevoke>(_onRevoke);
   }
 
   Future<void> _onFetch(BadgesFetch event, Emitter<BadgeState> emit) async {
@@ -21,6 +22,17 @@ class BadgeBloc extends Bloc<BadgeEvent, BadgeState> {
       emit(BadgesLoaded(badgeTypes: types, earnedBadges: earned));
     } catch (_) {
       emit(const BadgesError('Failed to load badges.'));
+    }
+  }
+
+  Future<void> _onRevoke(BadgeRevoke event, Emitter<BadgeState> emit) async {
+    if (state is! BadgesLoaded) return;
+    final previous = state as BadgesLoaded;
+    emit(previous.copyWithout(event.badgeId));
+    try {
+      await _badgeRepository.revokeBadge(event.badgeId);
+    } catch (_) {
+      emit(previous);
     }
   }
 }

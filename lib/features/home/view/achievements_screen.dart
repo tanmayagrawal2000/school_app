@@ -198,6 +198,173 @@ FaIconData _iconFor(String name) => switch (name) {
 
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
+/// Badge gallery designed to sit inside a [TabBarView] (e.g. StudentDetailScreen).
+/// Manages its own [BadgeBloc] scoped to [studentId].
+class BadgesTabView extends StatefulWidget {
+  /// Bloc owned by the parent screen; this widget does not close it.
+  final BadgeBloc badgeBloc;
+
+  /// Extra bottom padding to clear an overlapping FAB. Defaults to 0.
+  final double bottomPadding;
+
+  /// When true, a Revoke button appears on the badge detail card.
+  final bool isTeacher;
+
+  const BadgesTabView({
+    super.key,
+    required this.badgeBloc,
+    this.bottomPadding = 0,
+    this.isTeacher = false,
+  });
+
+  @override
+  State<BadgesTabView> createState() => _BadgesTabViewState();
+}
+
+class _BadgesTabViewState extends State<BadgesTabView> {
+  int? _selectedIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider.value(
+      value: widget.badgeBloc,
+      child: BlocBuilder<BadgeBloc, BadgeState>(
+        builder: (context, state) {
+          if (state is BadgesLoading) {
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryBrown),
+            );
+          }
+          if (state is BadgesError) {
+            return Center(child: Text(state.message));
+          }
+          if (state is! BadgesLoaded) return const SizedBox();
+
+          final earnedTypes = state.badgeTypes
+              .where((t) => state.earnedFor(t.id) != null)
+              .toList();
+
+          BadgeTypeModel? selType;
+          BadgeModel? selEarned;
+          if (_selectedIndex != null && _selectedIndex! < earnedTypes.length) {
+            selType = earnedTypes[_selectedIndex!];
+            selEarned = state.earnedFor(selType.id);
+          }
+
+          return Column(
+            children: [
+              Expanded(
+                child: earnedTypes.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const FaIcon(FontAwesomeIcons.award,
+                                size: 48, color: AppColors.textHint),
+                            const SizedBox(height: 12),
+                            Text(
+                              'No badges yet',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(color: AppColors.textHint),
+                            ),
+                          ],
+                        ),
+                      )
+                    : GridView.builder(
+                        padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          mainAxisSpacing: 28,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 0.82,
+                        ),
+                        itemCount: earnedTypes.length,
+                        itemBuilder: (context, i) {
+                          final type = earnedTypes[i];
+                          final earned = state.earnedFor(type.id);
+                          return _BadgeTile(
+                            type: type,
+                            earned: earned,
+                            selected: _selectedIndex == i,
+                            onTap: () => setState(
+                              () => _selectedIndex =
+                                  _selectedIndex == i ? null : i,
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              Padding(
+                padding: EdgeInsets.only(bottom: widget.bottomPadding),
+                child: _buildDescriptionCard(context, selType, selEarned),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _handleRevoke(
+      BuildContext context, String badgeId, String badgeLabel) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Revoke Badge'),
+        content: Text('Remove "$badgeLabel" from this student?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Revoke'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      setState(() => _selectedIndex = null);
+      if (context.mounted) {
+        context.read<BadgeBloc>().add(BadgeRevoke(badgeId));
+      }
+    }
+  }
+
+  Widget _buildDescriptionCard(
+      BuildContext context, BadgeTypeModel? type, BadgeModel? earned) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.08),
+            end: Offset.zero,
+          ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOut)),
+          child: child,
+        ),
+      ),
+      child: type == null
+          ? _HintCard(key: const ValueKey('hint'))
+          : _DetailCard(
+              key: ValueKey(type.id),
+              type: type,
+              earned: earned,
+              onRevoke: widget.isTeacher && earned != null
+                  ? () => _handleRevoke(context, earned.id, earned.label)
+                  : null,
+            ),
+    );
+  }
+}
+
 class AchievementsScreen extends StatelessWidget {
   final StudentModel student;
   const AchievementsScreen({super.key, required this.student});
@@ -739,7 +906,8 @@ class _HintCard extends StatelessWidget {
 class _DetailCard extends StatelessWidget {
   final BadgeTypeModel type;
   final BadgeModel? earned;
-  const _DetailCard({super.key, required this.type, this.earned});
+  final VoidCallback? onRevoke;
+  const _DetailCard({super.key, required this.type, this.earned, this.onRevoke});
 
   @override
   Widget build(BuildContext context) {
@@ -768,57 +936,78 @@ class _DetailCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 48,
-            height: 55,
-            child: CustomPaint(
-              painter: _ShieldPainter(
-                material: mat,
-                bannerText: bannerText,
-                year: year,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: Center(
-                  child: FaIcon(icon, color: mat.iconColor, size: 16),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                if (earned != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    'By ${earned!.awardedBy}',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppColors.textHint,
-                          fontStyle: FontStyle.italic,
-                        ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 48,
+                height: 55,
+                child: CustomPaint(
+                  painter: _ShieldPainter(
+                    material: mat,
+                    bannerText: bannerText,
+                    year: year,
                   ),
-                ],
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                        height: 1.5,
-                      ),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: Center(
+                      child: FaIcon(icon, color: mat.iconColor, size: 16),
+                    ),
+                  ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    if (earned != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'By ${earned!.awardedBy}',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: AppColors.textHint,
+                              fontStyle: FontStyle.italic,
+                            ),
+                      ),
+                    ],
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                            height: 1.5,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
+          if (onRevoke != null) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onRevoke,
+                icon: const Icon(Icons.remove_circle_outline, size: 16),
+                label: const Text('Revoke Badge'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: BorderSide(
+                      color: AppColors.error.withValues(alpha: 0.4)),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
