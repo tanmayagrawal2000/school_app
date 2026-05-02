@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../data/dummy/dummy_data.dart';
 import '../../../data/models/homework_model.dart';
 import '../../../data/models/pending_homework_entry.dart';
 import '../../../data/models/roster_student.dart';
 import '../../../data/models/subject_model.dart';
+import '../../../data/repositories/homework_repository.dart';
 
-class TeacherPendingHWScreen extends StatelessWidget {
+class TeacherPendingHWScreen extends StatefulWidget {
   final String classGrade;
   final String section;
   final String? subjectFilter;
@@ -19,17 +20,42 @@ class TeacherPendingHWScreen extends StatelessWidget {
   });
 
   @override
+  State<TeacherPendingHWScreen> createState() => _TeacherPendingHWScreenState();
+}
+
+class _TeacherPendingHWScreenState extends State<TeacherPendingHWScreen> {
+  List<PendingHomeworkEntry> _entries = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final entries = await context
+        .read<HomeworkRepository>()
+        .fetchPendingSubmissions(
+          widget.classGrade,
+          widget.section,
+          subjectFilter: widget.subjectFilter,
+        );
+    if (!mounted) return;
+    setState(() {
+      _entries = entries;
+      _loading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final entries = DummyData.pendingSubmissionsFor(
-      classGrade,
-      section,
-      subjectFilter: subjectFilter,
-    );
     final totalMissing =
-        entries.fold(0, (sum, e) => sum + e.missingCount);
-    final classLabel = 'Class $classGrade-$section';
-    final subtitle =
-        subjectFilter != null ? '$classLabel · $subjectFilter' : classLabel;
+        _entries.fold(0, (sum, e) => sum + e.missingCount);
+    final classLabel = 'Class ${widget.classGrade}-${widget.section}';
+    final subtitle = widget.subjectFilter != null
+        ? '$classLabel · ${widget.subjectFilter}'
+        : classLabel;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -49,24 +75,28 @@ class TeacherPendingHWScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: entries.isEmpty
-          ? _EmptyState(subjectFilter: subjectFilter)
-          : Column(
-              children: [
-                _SummaryStrip(
-                    assignmentCount: entries.length,
-                    missingCount: totalMissing),
-                Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                    itemCount: entries.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, i) =>
-                        _PendingHWCard(entry: entries[i]),
-                  ),
+      body: _loading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryBrown))
+          : _entries.isEmpty
+              ? _EmptyState(subjectFilter: widget.subjectFilter)
+              : Column(
+                  children: [
+                    _SummaryStrip(
+                        assignmentCount: _entries.length,
+                        missingCount: totalMissing),
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                        itemCount: _entries.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (context, i) =>
+                            _PendingHWCard(entry: _entries[i]),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
     );
   }
 }
@@ -179,7 +209,6 @@ class _PendingHWCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header row ─────────────────────────────────────────
             Row(
               children: [
                 Container(
@@ -225,8 +254,6 @@ class _PendingHWCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-
-            // ── Title ──────────────────────────────────────────────
             Text(
               hw.title,
               style: Theme.of(context)
@@ -235,8 +262,6 @@ class _PendingHWCard extends StatelessWidget {
                   ?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
-
-            // ── Teacher name ───────────────────────────────────────
             if (hw.teacherName.isNotEmpty)
               Row(
                 children: [
@@ -252,8 +277,6 @@ class _PendingHWCard extends StatelessWidget {
                 ],
               ),
             const SizedBox(height: 4),
-
-            // ── Due date ───────────────────────────────────────────
             Row(
               children: [
                 Icon(Icons.calendar_today_outlined,
@@ -268,12 +291,9 @@ class _PendingHWCard extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
             const Divider(color: AppColors.divider, height: 1),
             const SizedBox(height: 12),
-
-            // ── Submission status ───────────────────────────────────
             if (entry.missingCount == 0)
               Row(
                 children: [

@@ -1,7 +1,10 @@
 import '../models/attendance_model.dart';
 import '../models/class_stats_model.dart';
 import '../models/fee_model.dart';
+import '../models/parent_model.dart';
+import '../models/student_attendance_summary.dart';
 import '../models/student_model.dart';
+import '../models/student_subject_mark.dart';
 import '../models/teacher_model.dart';
 
 /// Contract for all student-related data operations.
@@ -38,4 +41,19 @@ abstract class StudentRepository {
 
   /// Returns all children linked to a parent account by [parentId].
   Future<List<StudentModel>> fetchChildrenForParent(String parentId);
+
+  /// Returns the parent record for [parentId], or `null` if not found.
+  Future<ParentModel?> fetchParent(String parentId);
+
+  /// Returns attendance summaries for every student in [classGrade]-[section].
+  Future<List<StudentAttendanceSummary>> fetchClassAttendanceSummary(
+      String classGrade, String section);
+
+  /// Returns the average attendance percentage for [classGrade]-[section].
+  Future<double> fetchClassAvgAttendance(String classGrade, String section);
+
+  /// Returns per-student marks for [subject] in [classGrade]-[section],
+  /// sorted worst→best by percentage.
+  Future<List<StudentSubjectMark>> fetchSubjectMarks(
+      String classGrade, String section, String subject);
 }

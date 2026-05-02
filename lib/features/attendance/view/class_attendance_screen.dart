@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../data/dummy/dummy_data.dart';
 import '../../../data/models/student_attendance_summary.dart';
+import '../../../data/repositories/student_repository.dart';
 
-class ClassAttendanceScreen extends StatelessWidget {
+class ClassAttendanceScreen extends StatefulWidget {
   final String classGrade;
   final String section;
 
@@ -15,10 +16,37 @@ class ClassAttendanceScreen extends StatelessWidget {
   });
 
   @override
+  State<ClassAttendanceScreen> createState() => _ClassAttendanceScreenState();
+}
+
+class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
+  List<StudentAttendanceSummary> _students = [];
+  double _overallPct = 0;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final repo = context.read<StudentRepository>();
+    final results = await Future.wait([
+      repo.fetchClassAttendanceSummary(widget.classGrade, widget.section),
+      repo.fetchClassAvgAttendance(widget.classGrade, widget.section),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _students = results[0] as List<StudentAttendanceSummary>;
+      _overallPct = results[1] as double;
+      _loading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final students = DummyData.classStudentAttendance(classGrade, section);
-    final overallPct = DummyData.classAvgAttendancePct(classGrade, section);
-    final atRisk = students.where((s) => s.percentage < 75).toList();
+    final atRisk = _students.where((s) => s.percentage < 75).toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -35,7 +63,7 @@ class ClassAttendanceScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'Class $classGrade-$section',
+                  'Class ${widget.classGrade}-${widget.section}',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
@@ -47,14 +75,17 @@ class ClassAttendanceScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 32),
-        children: [
-          _buildHeader(context, students.length, overallPct),
-          if (atRisk.isNotEmpty) _buildAtRiskStrip(context, atRisk.length),
-          _buildStudentList(context, students),
-        ],
-      ),
+      body: _loading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryBrown))
+          : ListView(
+              padding: const EdgeInsets.only(bottom: 32),
+              children: [
+                _buildHeader(context, _students.length, _overallPct),
+                if (atRisk.isNotEmpty) _buildAtRiskStrip(context, atRisk.length),
+                _buildStudentList(context, _students),
+              ],
+            ),
     );
   }
 

@@ -25,12 +25,12 @@ import 'announcements_list_screen.dart';
 import 'tomorrow_prep_screen.dart';
 import 'teacher_pending_hw_screen.dart';
 import '../../homework/view/teacher_homework_screen.dart';
+import '../../../data/repositories/homework_repository.dart';
 import 'class_grades_screen.dart';
 import 'subject_performance_screen.dart';
 import 'post_reminder_screen.dart';
 import '../../attendance/view/take_attendance_screen.dart';
 import '../../homework/view/post_homework_screen.dart';
-import '../../../data/dummy/dummy_data.dart';
 import '../../../core/services/notification_service.dart';
 import 'package:intl/intl.dart';
 import 'package:sgm_school_app/l10n/app_localizations.dart';
@@ -547,6 +547,8 @@ class _DashboardTab extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _TomorrowPrepCard(
+                      periodCount: state.tomorrowPeriods,
+                      reminderCount: state.tomorrowReminderCount,
                       onTap: state.currentStudent != null
                           ? () => Navigator.push(
                                 context,
@@ -1199,7 +1201,7 @@ class _AttendanceOverviewCard extends StatelessWidget {
                       ),
                       Center(
                         child: Text(
-                          '${pct.toStringAsFixed(0)}%',
+                          '${pct.toStringAsFixed(1)}%',
                           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                 color: color,
                                 fontWeight: FontWeight.w700,
@@ -1233,18 +1235,19 @@ class _AttendanceOverviewCard extends StatelessWidget {
 }
 
 class _TomorrowPrepCard extends StatelessWidget {
+  final int periodCount;
+  final int reminderCount;
   final VoidCallback? onTap;
-  const _TomorrowPrepCard({this.onTap});
+  const _TomorrowPrepCard({
+    required this.periodCount,
+    required this.reminderCount,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final tomorrow = DateTime.now().add(const Duration(days: 1));
-    final dayName = DateFormat('EEEE').format(tomorrow);
     final isWeekend = tomorrow.weekday == DateTime.sunday;
-    final periodCount =
-        isWeekend ? 0 : DummyData.periodsCountFor(dayName);
-    final reminderCount =
-        isWeekend ? 0 : DummyData.remindersForDay(dayName).length;
     final dayShort = DateFormat('EEE').format(tomorrow);
 
     return GestureDetector(
@@ -2580,9 +2583,41 @@ class _MonitorCell extends StatelessWidget {
 
 // ──────────────────── PARENT ALERTS CARD ────────────────────────────────────
 
-class _ParentAlertsCard extends StatelessWidget {
+class _ParentAlertsCard extends StatefulWidget {
   final StudentModel student;
   const _ParentAlertsCard({required this.student});
+
+  @override
+  State<_ParentAlertsCard> createState() => _ParentAlertsCardState();
+}
+
+class _ParentAlertsCardState extends State<_ParentAlertsCard> {
+  int _overdueHomeworkCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOverdueCount();
+  }
+
+  @override
+  void didUpdateWidget(_ParentAlertsCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.student.id != widget.student.id) {
+      _loadOverdueCount();
+    }
+  }
+
+  Future<void> _loadOverdueCount() async {
+    final homework = await context.read<HomeworkRepository>().fetchHomework(
+        widget.student.classGrade,
+        widget.student.section,
+        widget.student.id);
+    if (!mounted) return;
+    setState(() {
+      _overdueHomeworkCount = homework.where((h) => h.isOverdue).length;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2657,7 +2692,7 @@ class _ParentAlertsCard extends StatelessWidget {
 
   List<_AlertData> _buildAlerts(AppLocalizations l10n) {
     final alerts = <_AlertData>[];
-    final pct = student.attendancePercent;
+    final pct = widget.student.attendancePercent;
     if (pct < 75) {
       alerts.add(_AlertData(
         icon: Icons.warning_amber_rounded,
@@ -2665,21 +2700,19 @@ class _ParentAlertsCard extends StatelessWidget {
         message: l10n.homeParentLowAttendance,
       ));
     }
-    if (student.feeStatus == 'Partial' || student.feeStatus == 'Overdue') {
+    if (widget.student.feeStatus == 'Partial' ||
+        widget.student.feeStatus == 'Overdue') {
       alerts.add(_AlertData(
         icon: Icons.payments_outlined,
         color: AppColors.saffron,
         message: l10n.homeParentOverdueFees,
       ));
     }
-    final overdueCount = DummyData.homeworkFor(student.classGrade, student.section)
-        .where((h) => h.isOverdue)
-        .length;
-    if (overdueCount > 0) {
+    if (_overdueHomeworkCount > 0) {
       alerts.add(_AlertData(
         icon: Icons.library_books_outlined,
         color: AppColors.error,
-        message: l10n.homeParentOverdueHomework(overdueCount),
+        message: l10n.homeParentOverdueHomework(_overdueHomeworkCount),
       ));
     }
     return alerts;

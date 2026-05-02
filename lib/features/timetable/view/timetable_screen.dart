@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sgm_school_app/l10n/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../data/dummy/dummy_data.dart';
 import '../../../data/models/subject_model.dart';
 import '../../../data/models/timetable_model.dart';
+import '../../../data/repositories/teacher_repository.dart';
 import '../../home/bloc/home_bloc.dart';
 import '../../home/bloc/home_state.dart';
 import '../bloc/timetable_bloc.dart';
@@ -60,14 +60,20 @@ class _TimetableScreenState extends State<TimetableScreen> {
     if (homeState is HomeLoaded) _setupFromHomeState(homeState);
   }
 
-  void _setupFromHomeState(HomeLoaded state) {
+  Future<void> _setupFromHomeState(HomeLoaded state) async {
     if (state.isTeacher && state.currentTeacher != null) {
       final teacher = state.currentTeacher!;
-      _isTeacherMode = true;
-      _hasInchargeClass = teacher.classIncharge.isNotEmpty;
-      _teacherSchedule = DummyData.teacherSchedule(teacher.name);
+      final schedule = await context
+          .read<TeacherRepository>()
+          .fetchSchedule(teacher.name);
+      if (!mounted) return;
       final (classGrade, section) = teacher.inchargeClassParts;
-      _teacherInchargeLabel = 'Class $classGrade-$section';
+      setState(() {
+        _isTeacherMode = true;
+        _hasInchargeClass = teacher.classIncharge.isNotEmpty;
+        _teacherSchedule = schedule;
+        _teacherInchargeLabel = 'Class $classGrade-$section';
+      });
       _fetchFor(classGrade, section);
     } else if (state.currentStudent != null) {
       _fetchFor(state.currentStudent!.classGrade, state.currentStudent!.section);
@@ -129,7 +135,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
         return prev.currentStudent?.id != curr.currentStudent?.id;
       },
       listener: (context, state) {
-        if (state is HomeLoaded) setState(() => _setupFromHomeState(state));
+        if (state is HomeLoaded) _setupFromHomeState(state);
       },
       child: scaffold,
     );

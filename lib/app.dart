@@ -8,7 +8,9 @@ import 'data/repositories/announcement_repository.dart';
 import 'data/repositories/badge_repository.dart';
 import 'data/repositories/bus_repository.dart';
 import 'data/repositories/homework_repository.dart';
+import 'data/repositories/reminder_repository.dart';
 import 'data/repositories/student_repository.dart';
+import 'data/repositories/teacher_repository.dart';
 import 'data/repositories/timetable_repository.dart';
 
 // ── Active implementations ────────────────────────────────────────────────────
@@ -27,7 +29,9 @@ import 'data/repositories/dummy/dummy_announcement_repository.dart';
 import 'data/repositories/dummy/dummy_badge_repository.dart';
 import 'data/repositories/dummy/dummy_bus_repository.dart';
 import 'data/repositories/dummy/dummy_homework_repository.dart';
+import 'data/repositories/dummy/dummy_reminder_repository.dart';
 import 'data/repositories/dummy/dummy_student_repository.dart';
+import 'data/repositories/dummy/dummy_teacher_repository.dart';
 import 'data/repositories/dummy/dummy_timetable_repository.dart';
 
 // ── BLoCs ─────────────────────────────────────────────────────────────────────
@@ -64,6 +68,12 @@ class SGMSchoolApp extends StatelessWidget {
         RepositoryProvider<BadgeRepository>(
           create: (_) => DummyBadgeRepository(),
         ),
+        RepositoryProvider<TeacherRepository>(
+          create: (_) => DummyTeacherRepository(),
+        ),
+        RepositoryProvider<ReminderRepository>(
+          create: (_) => DummyReminderRepository(),
+        ),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -72,6 +82,8 @@ class SGMSchoolApp extends StatelessWidget {
               ctx.read<StudentRepository>(),
               ctx.read<TimetableRepository>(),
               ctx.read<AnnouncementRepository>(),
+              ctx.read<TeacherRepository>(),
+              ctx.read<ReminderRepository>(),
             ),
           ),
           BlocProvider(

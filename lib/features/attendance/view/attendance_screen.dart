@@ -77,7 +77,8 @@ class _AttendanceView extends StatelessWidget {
             );
           }
           if (state is AttendanceLoaded) {
-            return _AttendanceContent(state: state);
+            return _AttendanceContent(
+                state: state, student: student);
           }
           return const SizedBox();
         },
@@ -88,7 +89,9 @@ class _AttendanceView extends StatelessWidget {
 
 class _AttendanceContent extends StatelessWidget {
   final AttendanceLoaded state;
-  const _AttendanceContent({required this.state});
+  final StudentModel student;
+  const _AttendanceContent(
+      {required this.state, required this.student});
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +110,7 @@ class _AttendanceContent extends StatelessWidget {
   // ── HEADER WITH CIRCULAR PERCENTAGE ─────────────────────────────────
   Widget _buildHeader(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final pct = state.overallPercentage;
+    final pct = student.attendancePercent;
 
     return Container(
       margin: const EdgeInsets.all(16),

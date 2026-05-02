@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../data/dummy/dummy_data.dart';
 import '../../../data/models/student_subject_mark.dart';
 import '../../../data/models/subject_model.dart';
+import '../../../data/repositories/student_repository.dart';
 
-class SubjectPerformanceScreen extends StatelessWidget {
+class SubjectPerformanceScreen extends StatefulWidget {
   final String classGrade;
   final String section;
   final String subject;
@@ -18,14 +19,38 @@ class SubjectPerformanceScreen extends StatelessWidget {
   });
 
   @override
+  State<SubjectPerformanceScreen> createState() =>
+      _SubjectPerformanceScreenState();
+}
+
+class _SubjectPerformanceScreenState extends State<SubjectPerformanceScreen> {
+  List<StudentSubjectMark> _students = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final marks = await context.read<StudentRepository>().fetchSubjectMarks(
+        widget.classGrade, widget.section, widget.subject);
+    if (!mounted) return;
+    setState(() {
+      _students = marks;
+      _loading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final students = DummyData.subjectMarksFor(classGrade, section, subject);
-    final avg = students.isEmpty
+    final avg = _students.isEmpty
         ? 0.0
-        : students.map((s) => s.percentage).reduce((a, b) => a + b) /
-            students.length;
-    final atRisk = students.where((s) => s.percentage < 60).toList();
-    final subjectModel = SubjectModel.forName(subject);
+        : _students.map((s) => s.percentage).reduce((a, b) => a + b) /
+            _students.length;
+    final atRisk = _students.where((s) => s.percentage < 60).toList();
+    final subjectModel = SubjectModel.forName(widget.subject);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -43,7 +68,7 @@ class SubjectPerformanceScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'Class $classGrade-$section',
+                  'Class ${widget.classGrade}-${widget.section}',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
@@ -55,17 +80,20 @@ class SubjectPerformanceScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 32),
-        children: [
-          _buildHeader(context, avg, students.length, subjectModel),
-          if (atRisk.isNotEmpty) _buildAtRiskStrip(context, atRisk.length),
-          if (students.isEmpty)
-            _buildEmpty(context)
-          else
-            _buildStudentList(context, students),
-        ],
-      ),
+      body: _loading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryBrown))
+          : ListView(
+              padding: const EdgeInsets.only(bottom: 32),
+              children: [
+                _buildHeader(context, avg, _students.length, subjectModel),
+                if (atRisk.isNotEmpty) _buildAtRiskStrip(context, atRisk.length),
+                if (_students.isEmpty)
+                  _buildEmpty(context)
+                else
+                  _buildStudentList(context, _students),
+              ],
+            ),
     );
   }
 
@@ -137,7 +165,7 @@ class SubjectPerformanceScreen extends StatelessWidget {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        subject,
+                        widget.subject,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 17,
@@ -294,7 +322,6 @@ class _StudentMarkRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          // Avatar
           CircleAvatar(
             radius: 18,
             backgroundColor: avatarColor,
@@ -307,8 +334,6 @@ class _StudentMarkRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-
-          // Name + bar
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,7 +349,6 @@ class _StudentMarkRow extends StatelessWidget {
                             ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
-                    // Grade badge
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 2),
@@ -342,7 +366,6 @@ class _StudentMarkRow extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // Score
                     Text(
                       '${mark.marks}/${mark.maxMarks}',
                       style: Theme.of(context)

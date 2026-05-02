@@ -2,7 +2,10 @@ import '../../dummy/dummy_data.dart';
 import '../../models/attendance_model.dart';
 import '../../models/class_stats_model.dart';
 import '../../models/fee_model.dart';
+import '../../models/parent_model.dart';
+import '../../models/student_attendance_summary.dart';
 import '../../models/student_model.dart';
+import '../../models/student_subject_mark.dart';
 import '../../models/teacher_model.dart';
 import '../student_repository.dart';
 
@@ -72,5 +75,32 @@ class DummyStudentRepository implements StudentRepository {
   Future<List<StudentModel>> fetchChildrenForParent(String parentId) async {
     await Future.delayed(const Duration(milliseconds: 400));
     return DummyData.childrenForParent(parentId);
+  }
+
+  @override
+  Future<ParentModel?> fetchParent(String parentId) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return DummyData.parentFor(parentId);
+  }
+
+  @override
+  Future<List<StudentAttendanceSummary>> fetchClassAttendanceSummary(
+      String classGrade, String section) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    return DummyData.classStudentAttendance(classGrade, section);
+  }
+
+  @override
+  Future<double> fetchClassAvgAttendance(
+      String classGrade, String section) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return DummyData.classAvgAttendancePct(classGrade, section);
+  }
+
+  @override
+  Future<List<StudentSubjectMark>> fetchSubjectMarks(
+      String classGrade, String section, String subject) async {
+    await Future.delayed(const Duration(milliseconds: 350));
+    return DummyData.subjectMarksFor(classGrade, section, subject);
   }
 }

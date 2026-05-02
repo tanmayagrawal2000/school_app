@@ -3,7 +3,10 @@ import '../../../core/network/api_endpoints.dart';
 import '../../models/attendance_model.dart';
 import '../../models/class_stats_model.dart';
 import '../../models/fee_model.dart';
+import '../../models/parent_model.dart';
+import '../../models/student_attendance_summary.dart';
 import '../../models/student_model.dart';
+import '../../models/student_subject_mark.dart';
 import '../../models/teacher_model.dart';
 import '../student_repository.dart';
 
@@ -337,5 +340,107 @@ class ApiStudentRepository implements StudentRepository {
   Future<List<StudentModel>> fetchChildrenForParent(String parentId) async {
     final list = await _client.getList(ApiEndpoints.parentChildren(parentId));
     return list.map(StudentModel.fromJson).toList();
+  }
+
+  /// GET `/parents/{parentId}`
+  ///
+  /// Sample input: `parentId = "p001"`
+  ///
+  /// Sample response:
+  /// ```json
+  /// {
+  ///   "id": "p001",
+  ///   "name": "Rakesh Sharma",
+  ///   "childrenIds": ["s001"]
+  /// }
+  /// ```
+  @override
+  Future<ParentModel?> fetchParent(String parentId) async {
+    final json = await _client.get(ApiEndpoints.parentById(parentId));
+    if (json == null) return null;
+    return ParentModel.fromJson(json as Map<String, dynamic>);
+  }
+
+  /// GET `/academic/class-attendance?grade={classGrade}&section={section}`
+  ///
+  /// Returns per-student attendance summary for the entire class.
+  ///
+  /// Sample input: `classGrade = "10"`, `section = "A"`
+  ///
+  /// Sample response:
+  /// ```json
+  /// [
+  ///   {
+  ///     "studentId": "s001",
+  ///     "name": "Arjun Sharma",
+  ///     "photoInitials": "AS",
+  ///     "avatarColorIndex": 0,
+  ///     "presentDays": 84,
+  ///     "absentDays": 7,
+  ///     "lateDays": 1,
+  ///     "totalWorkingDays": 92,
+  ///     "percentage": 91.3
+  ///   }
+  /// ]
+  /// ```
+  @override
+  Future<List<StudentAttendanceSummary>> fetchClassAttendanceSummary(
+      String classGrade, String section) async {
+    final list = await _client.getList(
+      ApiEndpoints.classAttendanceSummary,
+      queryParams: {'grade': classGrade, 'section': section},
+    );
+    return list
+        .map((e) => StudentAttendanceSummary.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// GET `/academic/class-attendance?grade={classGrade}&section={section}`
+  ///
+  /// Returns the average attendance percentage derived from the list response.
+  @override
+  Future<double> fetchClassAvgAttendance(
+      String classGrade, String section) async {
+    final summaries = await fetchClassAttendanceSummary(classGrade, section);
+    if (summaries.isEmpty) return 0.0;
+    return summaries.map((s) => s.percentage).reduce((a, b) => a + b) /
+        summaries.length;
+  }
+
+  /// GET `/academic/subject-marks?grade={classGrade}&section={section}&subject={subject}`
+  ///
+  /// Returns per-student marks for [subject] sorted worst→best by percentage.
+  ///
+  /// Sample input: `classGrade = "10"`, `section = "A"`, `subject = "Mathematics"`
+  ///
+  /// Sample response:
+  /// ```json
+  /// [
+  ///   {
+  ///     "studentId": "s003",
+  ///     "name": "Rahul Gupta",
+  ///     "photoInitials": "RG",
+  ///     "avatarColorIndex": 2,
+  ///     "marks": 62,
+  ///     "maxMarks": 100,
+  ///     "grade": "B2",
+  ///     "percentage": 62.0
+  ///   }
+  /// ]
+  /// ```
+  @override
+  Future<List<StudentSubjectMark>> fetchSubjectMarks(
+      String classGrade, String section, String subject) async {
+    final list = await _client.getList(
+      ApiEndpoints.subjectMarks,
+      queryParams: {
+        'grade': classGrade,
+        'section': section,
+        'subject': subject,
+      },
+    );
+    return list
+        .map((e) => StudentSubjectMark.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }

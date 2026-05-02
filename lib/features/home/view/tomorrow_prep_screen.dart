@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../data/dummy/dummy_data.dart';
 import '../../../data/models/class_reminder_model.dart';
-import '../../../data/models/subject_model.dart';
 import '../../../data/models/homework_model.dart';
 import '../../../data/models/student_model.dart';
+import '../../../data/models/subject_model.dart';
+import '../../../data/models/timetable_model.dart';
 import '../../../data/repositories/homework_repository.dart';
+import '../../../data/repositories/reminder_repository.dart';
 import '../../../data/repositories/timetable_repository.dart';
 
 class TomorrowPrepScreen extends StatefulWidget {
@@ -35,7 +36,6 @@ class _TomorrowPrepScreenState extends State<TomorrowPrepScreen> {
     _dayName = DateFormat('EEEE').format(_tomorrow);
     _isWeekend = _tomorrow.weekday == DateTime.sunday;
     if (!_isWeekend) {
-      _reminders = DummyData.remindersForDay(_dayName);
       _loadData();
     } else {
       setState(() => _loading = false);
@@ -45,17 +45,26 @@ class _TomorrowPrepScreenState extends State<TomorrowPrepScreen> {
   Future<void> _loadData() async {
     final timetableRepo = context.read<TimetableRepository>();
     final homeworkRepo = context.read<HomeworkRepository>();
-    final timetableMap = await timetableRepo.fetchTimetable(
-        widget.student.classGrade, widget.student.section);
-    final homework = await homeworkRepo.fetchHomework(
-        widget.student.classGrade, widget.student.section, widget.student.id);
+    final reminderRepo = context.read<ReminderRepository>();
+    final results = await Future.wait([
+      timetableRepo.fetchTimetable(
+          widget.student.classGrade, widget.student.section),
+      homeworkRepo.fetchHomework(
+          widget.student.classGrade, widget.student.section, widget.student.id),
+      reminderRepo.fetchRemindersForDay(_dayName),
+    ]);
     if (!mounted) return;
+
+    final timetableMap = results[0] as Map<String, List<TimetablePeriod>>;
+    final homework = results[1] as List<HomeworkItem>;
+    final reminders = results[2] as List<ClassReminderModel>;
 
     // Show homework due today or tomorrow so students can prepare in advance
     final tomorrowEnd = DateTime(
         _tomorrow.year, _tomorrow.month, _tomorrow.day, 23, 59);
     setState(() {
       _periods = timetableMap[_dayName] ?? [];
+      _reminders = reminders;
       _dueHomework = homework
           .where((h) => !h.isSubmitted && !h.dueDate.isAfter(tomorrowEnd))
           .toList();
@@ -66,9 +75,10 @@ class _TomorrowPrepScreenState extends State<TomorrowPrepScreen> {
   @override
   Widget build(BuildContext context) {
     final dateLabel = DateFormat('EEEE, d MMMM').format(_tomorrow);
+    final nonBreakCount = _periods.where((p) => !p.isBreak).length;
     final subtitle = _isWeekend
         ? dateLabel
-        : '$dateLabel  ·  ${DummyData.periodsCountFor(_dayName)} periods';
+        : '$dateLabel  ·  $nonBreakCount periods';
 
     return Scaffold(
       backgroundColor: AppColors.background,

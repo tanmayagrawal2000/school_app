@@ -4,7 +4,9 @@ import '../../../data/dummy/dummy_data.dart';
 import '../../../data/models/student_model.dart';
 import '../../../data/models/teacher_model.dart';
 import '../../../data/repositories/announcement_repository.dart';
+import '../../../data/repositories/reminder_repository.dart';
 import '../../../data/repositories/student_repository.dart';
+import '../../../data/repositories/teacher_repository.dart';
 import '../../../data/repositories/timetable_repository.dart';
 import '../../../data/models/teacher_class_summary.dart';
 import 'home_event.dart';
@@ -14,9 +16,16 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final StudentRepository _studentRepo;
   final TimetableRepository _timetableRepo;
   final AnnouncementRepository _announcementRepo;
+  final TeacherRepository _teacherRepo;
+  final ReminderRepository _reminderRepo;
 
-  HomeBloc(this._studentRepo, this._timetableRepo, this._announcementRepo)
-      : super(HomeInitial()) {
+  HomeBloc(
+    this._studentRepo,
+    this._timetableRepo,
+    this._announcementRepo,
+    this._teacherRepo,
+    this._reminderRepo,
+  ) : super(HomeInitial()) {
     on<HomeFetchDashboard>(_onFetchDashboard);
     on<HomeMarkAnnouncementRead>(_onMarkRead);
     on<HomeSelectChild>(_onSelectChild);
@@ -33,16 +42,18 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     TeacherModel? currentTeacher;
     List<TeacherModel> subjectTeachers = [];
     int todayPeriods = 0;
+    int tomorrowPeriods = 0;
+    int tomorrowReminderCount = 0;
     List<StudentModel> children = [];
     String? parentName;
     List<TeacherClassSummary> teacherClasses = [];
 
     if (event.role == UserRole.teacher) {
-      currentTeacher = DummyData.currentTeacher;
-      teacherClasses = DummyData.teacherClassSummaries(currentTeacher, _todayName());
+      currentTeacher = await _teacherRepo.fetchCurrentTeacher();
+      teacherClasses = await _teacherRepo.fetchClassSummaries(currentTeacher, _todayName());
       todayPeriods = teacherClasses.fold(0, (sum, c) => sum + c.todayPeriods);
     } else if (event.role == UserRole.parent) {
-      parentName = DummyData.parentFor('p001')?.name;
+      parentName = (await _studentRepo.fetchParent('p001'))?.name;
       children = await _studentRepo.fetchChildrenForParent('p001');
       if (children.isNotEmpty) currentStudent = children.first;
     } else {
@@ -63,6 +74,16 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         currentStudent.section,
       );
       todayPeriods = _timetableRepo.periodsCountForDay(timetable, _todayName());
+      final tomorrow = DateTime.now().add(const Duration(days: 1));
+      final tomorrowName = _dayName(tomorrow);
+      final tomorrowIsWeekend = tomorrow.weekday == DateTime.sunday;
+      tomorrowPeriods = tomorrowIsWeekend
+          ? 0
+          : _timetableRepo.periodsCountForDay(timetable, tomorrowName);
+      if (!tomorrowIsWeekend) {
+        final reminders = await _reminderRepo.fetchRemindersForDay(tomorrowName);
+        tomorrowReminderCount = reminders.length;
+      }
     }
 
     final announcements = await _announcementRepo.fetchAnnouncements();
@@ -77,6 +98,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       classTeacher: classTeacher,
       subjectTeachers: subjectTeachers,
       todayPeriods: todayPeriods,
+      tomorrowPeriods: tomorrowPeriods,
+      tomorrowReminderCount: tomorrowReminderCount,
       children: children,
       parentName: parentName,
       currentTeacher: currentTeacher,
@@ -108,6 +131,17 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       child.classGrade, child.section);
     final todayPeriods =
         _timetableRepo.periodsCountForDay(timetable, _todayName());
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    final tomorrowName = _dayName(tomorrow);
+    final tomorrowIsWeekend = tomorrow.weekday == DateTime.sunday;
+    final tomorrowPeriods = tomorrowIsWeekend
+        ? 0
+        : _timetableRepo.periodsCountForDay(timetable, tomorrowName);
+    int tomorrowReminderCount = 0;
+    if (!tomorrowIsWeekend) {
+      final reminders = await _reminderRepo.fetchRemindersForDay(tomorrowName);
+      tomorrowReminderCount = reminders.length;
+    }
 
     final s = state;
     if (s is HomeLoaded && s.currentStudent?.id == child.id) {
@@ -116,6 +150,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         classTeacher: classTeacher,
         subjectTeachers: subjectTeachers,
         todayPeriods: todayPeriods,
+        tomorrowPeriods: tomorrowPeriods,
+        tomorrowReminderCount: tomorrowReminderCount,
       ));
     }
   }
@@ -127,11 +163,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
   }
 
-  String _todayName() {
+  String _todayName() => _dayName(DateTime.now());
+
+  String _dayName(DateTime date) {
     const days = [
       'Monday', 'Tuesday', 'Wednesday', 'Thursday',
       'Friday', 'Saturday', 'Sunday',
     ];
-    return days[DateTime.now().weekday - 1];
+    return days[date.weekday - 1];
   }
 }

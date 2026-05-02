@@ -1,6 +1,8 @@
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../models/homework_model.dart';
+import '../../models/pending_homework_entry.dart';
+import '../../models/roster_student.dart';
 import '../homework_repository.dart';
 
 /// Live API implementation of [HomeworkRepository].
@@ -81,5 +83,113 @@ class ApiHomeworkRepository implements HomeworkRepository {
       ApiEndpoints.homeworkSubmissions(hwId),
       body: {'submittedStudentIds': submittedIds.toList()},
     );
+  }
+
+  /// GET `/academic/homework/by-teacher?teacherName={teacherName}`
+  ///
+  /// Returns homework grouped by class key (e.g. `"10-A"`) for the teacher.
+  ///
+  /// Sample response:
+  /// ```json
+  /// {
+  ///   "10-A": [
+  ///     { "id": "hw001", "subject": "Mathematics", "title": "...",
+  ///       "dueDate": "2026-05-05T00:00:00.000Z", "priority": "high" }
+  ///   ],
+  ///   "11-B": []
+  /// }
+  /// ```
+  @override
+  Future<Map<String, List<HomeworkItem>>> fetchHomeworkByTeacher(
+      String teacherName) async {
+    final json = await _client.get(
+      ApiEndpoints.homeworkByTeacher,
+      queryParams: {'teacherName': teacherName},
+    );
+    return (json as Map<String, dynamic>).map(
+      (key, value) => MapEntry(
+        key,
+        (value as List).map(HomeworkItem.fromJson).toList(),
+      ),
+    );
+  }
+
+  /// GET `/classes/{grade}/{section}/roster`
+  ///
+  /// Returns the lightweight student roster for a class.
+  ///
+  /// Sample response:
+  /// ```json
+  /// [
+  ///   { "id": "r_10a_1", "name": "Aarav Sharma", "photoInitials": "AS",
+  ///     "avatarColorIndex": 0 }
+  /// ]
+  /// ```
+  @override
+  Future<List<RosterStudent>> fetchClassRoster(
+      String classGrade, String section) async {
+    final list = await _client.getList(
+        ApiEndpoints.classRoster(classGrade, section));
+    return list
+        .map((e) => RosterStudent.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// GET `/academic/homework/{hwId}/submission-count?grade={grade}&section={section}`
+  ///
+  /// Sample response: `{ "count": 24 }`
+  @override
+  Future<int> fetchSubmittedCount(
+      String hwId, String classGrade, String section) async {
+    final json = await _client.get(
+      ApiEndpoints.homeworkSubmissionCount(hwId),
+      queryParams: {'grade': classGrade, 'section': section},
+    );
+    return (json as Map<String, dynamic>)['count'] as int;
+  }
+
+  /// GET `/academic/homework/{hwId}/submitted/{studentId}`
+  ///
+  /// Sample response: `{ "submitted": true }`
+  @override
+  Future<bool> fetchIsSubmittedBy(String hwId, String studentId) async {
+    final json = await _client.get(
+        ApiEndpoints.homeworkSubmittedBy(hwId, studentId));
+    return (json as Map<String, dynamic>)['submitted'] as bool;
+  }
+
+  /// GET `/academic/pending-submissions?grade={grade}&section={section}&subject={subject}`
+  ///
+  /// Returns overdue homework entries with per-student submission status.
+  ///
+  /// Sample response:
+  /// ```json
+  /// [
+  ///   {
+  ///     "homework": { "id": "hw001", "subject": "Mathematics", "title": "...",
+  ///                   "dueDate": "2026-04-20T00:00:00.000Z", "priority": "high" },
+  ///     "totalStudents": 30,
+  ///     "submittedCount": 22,
+  ///     "missingCount": 8,
+  ///     "notSubmitted": [
+  ///       { "id": "r_10a_3", "name": "Rahul Gupta", "photoInitials": "RG",
+  ///         "avatarColorIndex": 2 }
+  ///     ]
+  ///   }
+  /// ]
+  /// ```
+  @override
+  Future<List<PendingHomeworkEntry>> fetchPendingSubmissions(
+      String classGrade, String section, {String? subjectFilter}) async {
+    final params = <String, String>{
+      'grade': classGrade,
+      'section': section,
+    };
+    if (subjectFilter != null) params['subject'] = subjectFilter;
+    final list = await _client.getList(
+        ApiEndpoints.pendingSubmissions, queryParams: params);
+    return list
+        .map((e) => PendingHomeworkEntry.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }

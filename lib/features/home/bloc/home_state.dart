@@ -25,6 +25,8 @@ class HomeLoaded extends HomeState {
   final TeacherModel? classTeacher;
   final List<TeacherModel> subjectTeachers;
   final int todayPeriods;
+  final int tomorrowPeriods;
+  final int tomorrowReminderCount;
 
   // Non-empty only for parent role — all linked children
   final List<StudentModel> children;
@@ -48,6 +50,8 @@ class HomeLoaded extends HomeState {
     this.classTeacher,
     this.subjectTeachers = const [],
     this.todayPeriods = 0,
+    this.tomorrowPeriods = 0,
+    this.tomorrowReminderCount = 0,
     this.children = const [],
     this.parentName,
     this.currentTeacher,
@@ -67,6 +71,8 @@ class HomeLoaded extends HomeState {
         classTeacher: classTeacher,
         subjectTeachers: subjectTeachers,
         todayPeriods: todayPeriods,
+        tomorrowPeriods: tomorrowPeriods,
+        tomorrowReminderCount: tomorrowReminderCount,
         children: children,
         parentName: parentName,
         currentTeacher: currentTeacher,
@@ -79,6 +85,8 @@ class HomeLoaded extends HomeState {
     required TeacherModel? classTeacher,
     required List<TeacherModel> subjectTeachers,
     required int todayPeriods,
+    int tomorrowPeriods = 0,
+    int tomorrowReminderCount = 0,
   }) =>
       HomeLoaded(
         role: role,
@@ -88,6 +96,8 @@ class HomeLoaded extends HomeState {
         classTeacher: classTeacher,
         subjectTeachers: subjectTeachers,
         todayPeriods: todayPeriods,
+        tomorrowPeriods: tomorrowPeriods,
+        tomorrowReminderCount: tomorrowReminderCount,
         children: children,
         parentName: parentName,
         currentTeacher: currentTeacher,
@@ -104,6 +114,8 @@ class HomeLoaded extends HomeState {
         classTeacher,
         subjectTeachers,
         todayPeriods,
+        tomorrowPeriods,
+        tomorrowReminderCount,
         children,
         parentName,
         currentTeacher,

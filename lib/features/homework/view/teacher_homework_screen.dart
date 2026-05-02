@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../data/dummy/dummy_data.dart';
 import '../../../data/models/homework_model.dart';
 import '../../../data/models/roster_student.dart';
 import '../../../data/models/subject_model.dart';
@@ -16,8 +15,10 @@ class TeacherHomeworkScreen extends StatefulWidget {
 }
 
 class _TeacherHomeworkScreenState extends State<TeacherHomeworkScreen> {
-  // classKey → homework list, e.g. "11-A" → [...]
-  late Map<String, List<HomeworkItem>> _byClass;
+  Map<String, List<HomeworkItem>> _byClass = {};
+  Map<String, int> _submittedCounts = {};
+  Map<String, int> _rosterSizes = {};
+  bool _loading = true;
 
   // 'all' | 'upcoming' | 'overdue'
   String _filter = 'all';
@@ -28,8 +29,46 @@ class _TeacherHomeworkScreenState extends State<TeacherHomeworkScreen> {
     _reload();
   }
 
-  void _reload() {
-    _byClass = DummyData.homeworkByClassForTeacher(widget.teacherName);
+  Future<void> _reload() async {
+    if (!mounted) return;
+    setState(() => _loading = true);
+
+    final repo = context.read<HomeworkRepository>();
+    final byClass = await repo.fetchHomeworkByTeacher(widget.teacherName);
+
+    final classKeys = byClass.keys.toList();
+    final hwEntries = [
+      for (final e in byClass.entries)
+        for (final hw in e.value) (classKey: e.key, hw: hw),
+    ];
+
+    final rosterResults = await Future.wait([
+      for (final k in classKeys)
+        () async {
+          final parts = k.split('-');
+          final roster =
+              await repo.fetchClassRoster(parts[0], parts[1]);
+          return MapEntry(k, roster.length);
+        }(),
+    ]);
+
+    final submittedResults = await Future.wait([
+      for (final entry in hwEntries)
+        () async {
+          final parts = entry.classKey.split('-');
+          final count = await repo.fetchSubmittedCount(
+              entry.hw.id, parts[0], parts[1]);
+          return MapEntry(entry.hw.id, count);
+        }(),
+    ]);
+
+    if (!mounted) return;
+    setState(() {
+      _byClass = byClass;
+      _rosterSizes = Map.fromEntries(rosterResults);
+      _submittedCounts = Map.fromEntries(submittedResults);
+      _loading = false;
+    });
   }
 
   List<_HWEntry> get _entries {
@@ -43,10 +82,15 @@ class _TeacherHomeworkScreenState extends State<TeacherHomeworkScreen> {
         final isOverdue = hw.dueDate.isBefore(now);
         if (_filter == 'upcoming' && isOverdue) continue;
         if (_filter == 'overdue' && !isOverdue) continue;
-        list.add(_HWEntry(classGrade: grade, section: section, hw: hw));
+        list.add(_HWEntry(
+          classGrade: grade,
+          section: section,
+          hw: hw,
+          submittedCount: _submittedCounts[hw.id] ?? 0,
+          totalStudents: _rosterSizes[entry.key] ?? 0,
+        ));
       }
     }
-    // overdue first, then upcoming; within each group sort by due date
     list.sort((a, b) {
       final aOver = a.hw.dueDate.isBefore(now);
       final bOver = b.hw.dueDate.isBefore(now);
@@ -62,33 +106,39 @@ class _TeacherHomeworkScreenState extends State<TeacherHomeworkScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('My Homework')),
-      body: Column(
-        children: [
-          _buildFilterBar(context),
-          Expanded(
-            child: entries.isEmpty
-                ? _EmptyState(filter: _filter)
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                    itemCount: entries.length,
-                    itemBuilder: (context, i) => _HomeworkCard(
-                      entry: entries[i],
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => TeacherMarkSubmissionsScreen(
-                              entry: entries[i],
-                            ),
+      body: _loading
+          ? const Center(
+              child:
+                  CircularProgressIndicator(color: AppColors.primaryBrown))
+          : Column(
+              children: [
+                _buildFilterBar(context),
+                Expanded(
+                  child: entries.isEmpty
+                      ? _EmptyState(filter: _filter)
+                      : ListView.builder(
+                          padding:
+                              const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                          itemCount: entries.length,
+                          itemBuilder: (context, i) => _HomeworkCard(
+                            entry: entries[i],
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      TeacherMarkSubmissionsScreen(
+                                    entry: entries[i],
+                                  ),
+                                ),
+                              );
+                              _reload();
+                            },
                           ),
-                        );
-                        setState(_reload);
-                      },
-                    ),
-                  ),
-          ),
-        ],
-      ),
+                        ),
+                ),
+              ],
+            ),
     );
   }
 
@@ -110,7 +160,8 @@ class _TeacherHomeworkScreenState extends State<TeacherHomeworkScreen> {
               onTap: () => setState(() => _filter = f.$1),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 7),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? AppColors.primaryBrown
@@ -122,7 +173,9 @@ class _TeacherHomeworkScreenState extends State<TeacherHomeworkScreen> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    color: isSelected
+                        ? Colors.white
+                        : AppColors.textSecondary,
                   ),
                 ),
               ),
@@ -140,8 +193,15 @@ class _HWEntry {
   final String classGrade;
   final String section;
   final HomeworkItem hw;
-  const _HWEntry(
-      {required this.classGrade, required this.section, required this.hw});
+  final int submittedCount;
+  final int totalStudents;
+  const _HWEntry({
+    required this.classGrade,
+    required this.section,
+    required this.hw,
+    required this.submittedCount,
+    required this.totalStudents,
+  });
   String get classLabel => 'Class $classGrade-$section';
 }
 
@@ -171,10 +231,9 @@ class _HomeworkCard extends StatelessWidget {
             ? 'Due today'
             : 'Due ${_fmtDate(hw.dueDate)}';
 
-    final submitted = DummyData.submittedCountFor(
-        hw.id, entry.classGrade, entry.section);
-    final total = DummyData.classRosterFor(entry.classGrade, entry.section).length;
-    final allDone = submitted == total;
+    final submitted = entry.submittedCount;
+    final total = entry.totalStudents;
+    final allDone = total > 0 && submitted == total;
 
     return GestureDetector(
       onTap: onTap,
@@ -230,9 +289,12 @@ class _HomeworkCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(entry.classLabel,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: AppColors.primaryBrown,
-                            fontWeight: FontWeight.w600)),
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelSmall
+                            ?.copyWith(
+                                color: AppColors.primaryBrown,
+                                fontWeight: FontWeight.w600)),
                   ),
                   const Spacer(),
                   _PriorityBadge(priority: hw.priority),
@@ -256,7 +318,8 @@ class _HomeworkCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(dueLabel,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: dueLabelColor, fontWeight: FontWeight.w500)),
+                          color: dueLabelColor,
+                          fontWeight: FontWeight.w500)),
                 ],
               ),
               const SizedBox(height: 10),
@@ -273,7 +336,9 @@ class _HomeworkCard extends StatelessWidget {
                         value: total == 0 ? 0 : submitted / total,
                         backgroundColor: AppColors.surfaceVariant,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                            allDone ? AppColors.success : AppColors.primaryBrown),
+                            allDone
+                                ? AppColors.success
+                                : AppColors.primaryBrown),
                         minHeight: 5,
                       ),
                     ),
@@ -301,8 +366,8 @@ class _HomeworkCard extends StatelessWidget {
 
   String _fmtDate(DateTime d) {
     const m = [
-      'Jan','Feb','Mar','Apr','May','Jun',
-      'Jul','Aug','Sep','Oct','Nov','Dec'
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     return '${d.day} ${m[d.month - 1]}';
   }
@@ -375,11 +440,12 @@ class TeacherMarkSubmissionsScreen extends StatefulWidget {
 
 class _TeacherMarkSubmissionsScreenState
     extends State<TeacherMarkSubmissionsScreen> {
-  late List<RosterStudent> _roster;
+  List<RosterStudent> _roster = [];
 
   // Local draft — switches update this; Save commits it via the repository.
-  late Set<String> _localSubmitted;
+  Set<String> _localSubmitted = {};
 
+  bool _loading = true;
   bool _isSaving = false;
   String _searchQuery = '';
   final _searchCtrl = TextEditingController();
@@ -397,15 +463,29 @@ class _TeacherMarkSubmissionsScreenState
   @override
   void initState() {
     super.initState();
-    _roster = DummyData.classRosterFor(
-        widget.entry.classGrade, widget.entry.section);
-    // Seed local draft from currently saved state
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final repo = context.read<HomeworkRepository>();
     final hwId = widget.entry.hw.id;
-    _localSubmitted = Set.of(
-      _roster
-          .where((s) => DummyData.isSubmittedBy(hwId, s.id))
-          .map((s) => s.id),
+
+    final roster = await repo.fetchClassRoster(
+        widget.entry.classGrade, widget.entry.section);
+
+    final submittedFlags = await Future.wait(
+      roster.map((s) => repo.fetchIsSubmittedBy(hwId, s.id)),
     );
+
+    if (!mounted) return;
+    setState(() {
+      _roster = roster;
+      _localSubmitted = {
+        for (var i = 0; i < roster.length; i++)
+          if (submittedFlags[i]) roster[i].id,
+      };
+      _loading = false;
+    });
   }
 
   @override
@@ -464,6 +544,29 @@ class _TeacherMarkSubmissionsScreenState
   Widget build(BuildContext context) {
     final hw = widget.entry.hw;
     final subject = SubjectModel.forName(hw.subject);
+
+    if (_loading) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Mark Submissions',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white, fontWeight: FontWeight.w700)),
+              Text(widget.entry.classLabel,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.85))),
+            ],
+          ),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(color: AppColors.primaryBrown),
+        ),
+      );
+    }
+
     final submittedCount = _localSubmitted.length;
     final total = _roster.length;
     final filtered = _filtered;
@@ -499,48 +602,47 @@ class _TeacherMarkSubmissionsScreenState
           ],
         ),
         child: Padding(
-            padding: EdgeInsets.fromLTRB(
-                16, 12, 16, 12 + MediaQuery.of(context).viewPadding.bottom),
-            child: Row(
-              children: [
-                // Running count
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$submittedCount / $total',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: submittedCount == total
-                                ? AppColors.success
-                                : AppColors.primaryBrown,
-                          ),
-                    ),
-                    Text('submitted',
-                        style: Theme.of(context)
-                            .textTheme
-                            .labelSmall
-                            ?.copyWith(color: AppColors.textSecondary)),
-                  ],
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _isSaving ? null : _save,
-                    child: _isSaving
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text('Save Submissions'),
+          padding: EdgeInsets.fromLTRB(
+              16, 12, 16, 12 + MediaQuery.of(context).viewPadding.bottom),
+          child: Row(
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$submittedCount / $total',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: submittedCount == total
+                              ? AppColors.success
+                              : AppColors.primaryBrown,
+                        ),
                   ),
+                  Text('submitted',
+                      style: Theme.of(context)
+                          .textTheme
+                          .labelSmall
+                          ?.copyWith(color: AppColors.textSecondary)),
+                ],
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isSaving ? null : _save,
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Save Submissions'),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 16),
@@ -663,7 +765,8 @@ class _TeacherMarkSubmissionsScreenState
               padding: const EdgeInsets.symmetric(vertical: 32),
               child: Column(
                 children: [
-                  Icon(Icons.search_off, size: 48, color: AppColors.textHint),
+                  Icon(Icons.search_off,
+                      size: 48, color: AppColors.textHint),
                   const SizedBox(height: 8),
                   Text('No students found',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -692,7 +795,8 @@ class _TeacherMarkSubmissionsScreenState
                     height: 1, indent: 72, color: AppColors.divider),
                 itemBuilder: (context, i) {
                   final student = filtered[i];
-                  final isSubmitted = _localSubmitted.contains(student.id);
+                  final isSubmitted =
+                      _localSubmitted.contains(student.id);
                   final avatarColor = _avatarColors[
                       student.avatarColorIndex % _avatarColors.length];
 
@@ -717,10 +821,13 @@ class _TeacherMarkSubmissionsScreenState
                             ?.copyWith(fontWeight: FontWeight.w600)),
                     subtitle: Text(
                       isSubmitted ? 'Submitted' : 'Not submitted',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: isSubmitted
-                              ? AppColors.success
-                              : AppColors.textHint),
+                      style: Theme.of(context)
+                          .textTheme
+                          .labelSmall
+                          ?.copyWith(
+                              color: isSubmitted
+                                  ? AppColors.success
+                                  : AppColors.textHint),
                     ),
                     trailing: Switch(
                       value: isSubmitted,

@@ -65,4 +65,46 @@ class ApiEndpoints {
   static String badgesForStudent(String studentId) =>
       '/students/$studentId/badges';
   static String badgeById(String id) => '/badges/$id';
+
+  // ── Teacher ───────────────────────────────────────────────────────────
+  /// GET `/teachers/me`
+  static const String currentTeacher = '/teachers/me';
+
+  /// GET `/teachers/me/class-summaries?day=Monday`
+  static const String teacherClassSummaries = '/teachers/me/class-summaries';
+
+  /// GET `/teachers/me/schedule`
+  static const String teacherSchedule = '/teachers/me/schedule';
+
+  // ── Reminders ─────────────────────────────────────────────────────────
+  /// GET `/reminders?day=Monday`
+  static const String reminders = '/reminders';
+
+  // ── Class-level academic data ──────────────────────────────────────────
+  /// GET `/academic/class-attendance?grade=10&section=A`
+  static const String classAttendanceSummary = '/academic/class-attendance';
+
+  /// GET `/academic/subject-marks?grade=10&section=A&subject=Mathematics`
+  static const String subjectMarks = '/academic/subject-marks';
+
+  /// GET `/academic/pending-submissions?grade=10&section=A`
+  static const String pendingSubmissions = '/academic/pending-submissions';
+
+  /// GET `/academic/homework/by-teacher?teacherName=...`
+  static const String homeworkByTeacher = '/academic/homework/by-teacher';
+
+  /// GET `/classes/{grade}/{section}/roster`
+  static String classRoster(String grade, String section) =>
+      '/classes/$grade/$section/roster';
+
+  /// GET `/academic/homework/{hwId}/submission-count?grade=10&section=A`
+  static String homeworkSubmissionCount(String hwId) =>
+      '/academic/homework/$hwId/submission-count';
+
+  /// GET `/academic/homework/{hwId}/submitted/{studentId}`
+  static String homeworkSubmittedBy(String hwId, String studentId) =>
+      '/academic/homework/$hwId/submitted/$studentId';
+
+  /// GET `/parents/{parentId}`
+  static String parentById(String parentId) => '/parents/$parentId';
 }
