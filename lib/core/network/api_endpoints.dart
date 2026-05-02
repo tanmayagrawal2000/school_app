@@ -10,8 +10,20 @@ class ApiEndpoints {
   static const String baseUrl = 'https://api.sgmschool.com/v1';
 
   // ── Auth ──────────────────────────────────────────────────────────────
+  /// POST `/auth/login`
+  /// Body: `{ "username": "aarav.sharma", "password": "secret", "role": "student" }`
+  /// Response: `{ "accessToken": "eyJ...", "refreshToken": "eyJ...", "expiresIn": 3600 }`
+  /// Valid role values: `student` | `parent` | `teacher`
   static const String login = '/auth/login';
+
+  /// POST `/auth/logout`
+  /// Body: `{ "refreshToken": "eyJ..." }`
+  /// Response: `204 No Content`
   static const String logout = '/auth/logout';
+
+  /// POST `/auth/refresh`
+  /// Body: `{ "refreshToken": "eyJ..." }`
+  /// Response: `{ "accessToken": "eyJ...", "expiresIn": 3600 }`
   static const String refreshToken = '/auth/refresh';
 
   // ── Current user ──────────────────────────────────────────────────────
