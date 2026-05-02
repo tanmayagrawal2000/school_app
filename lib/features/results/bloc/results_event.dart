@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 
 abstract class ResultsEvent extends Equatable {
@@ -12,4 +13,9 @@ class ResultsFetch extends ResultsEvent {
   const ResultsFetch({required this.classGrade, required this.section});
   @override
   List<Object?> get props => [classGrade, section];
+}
+
+class ResultsRefresh extends ResultsEvent {
+  final Completer<void>? completer;
+  const ResultsRefresh({this.completer});
 }

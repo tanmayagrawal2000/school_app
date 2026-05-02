@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/cache/app_cache.dart';
 import '../../../core/enums/user_role.dart';
 import '../../../data/dummy/dummy_data.dart';
 import '../../../data/models/student_model.dart';
@@ -19,6 +20,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final TeacherRepository _teacherRepo;
   final ReminderRepository _reminderRepo;
 
+  UserRole? _lastRole;
+
   HomeBloc(
     this._studentRepo,
     this._timetableRepo,
@@ -27,6 +30,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     this._reminderRepo,
   ) : super(HomeInitial()) {
     on<HomeFetchDashboard>(_onFetchDashboard);
+    on<HomeRefresh>(_onRefresh);
     on<HomeMarkAnnouncementRead>(_onMarkRead);
     on<HomeSelectChild>(_onSelectChild);
   }
@@ -35,8 +39,23 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     HomeFetchDashboard event,
     Emitter<HomeState> emit,
   ) async {
+    _lastRole = event.role;
     emit(HomeLoading());
+    await _doFetch(event.role, emit);
+  }
 
+  Future<void> _onRefresh(
+    HomeRefresh event,
+    Emitter<HomeState> emit,
+  ) async {
+    final role = _lastRole;
+    if (role == null) { event.completer?.complete(); return; }
+    AppCache.clear();
+    await _doFetch(role, emit);
+    event.completer?.complete();
+  }
+
+  Future<void> _doFetch(UserRole role, Emitter<HomeState> emit) async {
     StudentModel? currentStudent;
     TeacherModel? classTeacher;
     TeacherModel? currentTeacher;
@@ -48,11 +67,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     String? parentName;
     List<TeacherClassSummary> teacherClasses = [];
 
-    if (event.role == UserRole.teacher) {
+    if (role == UserRole.teacher) {
       currentTeacher = await _teacherRepo.fetchCurrentTeacher();
-      teacherClasses = await _teacherRepo.fetchClassSummaries(currentTeacher, _todayName());
-      todayPeriods = teacherClasses.fold(0, (sum, c) => sum + c.todayPeriods);
-    } else if (event.role == UserRole.parent) {
+      teacherClasses =
+          await _teacherRepo.fetchClassSummaries(currentTeacher, _todayName());
+      todayPeriods =
+          teacherClasses.fold(0, (sum, c) => sum + c.todayPeriods);
+    } else if (role == UserRole.parent) {
       parentName = (await _studentRepo.fetchParent('p001'))?.name;
       children = await _studentRepo.fetchChildrenForParent('p001');
       if (children.isNotEmpty) currentStudent = children.first;
@@ -73,7 +94,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         currentStudent.classGrade,
         currentStudent.section,
       );
-      todayPeriods = _timetableRepo.periodsCountForDay(timetable, _todayName());
+      todayPeriods =
+          _timetableRepo.periodsCountForDay(timetable, _todayName());
       final tomorrow = DateTime.now().add(const Duration(days: 1));
       final tomorrowName = _dayName(tomorrow);
       final tomorrowIsWeekend = tomorrow.weekday == DateTime.sunday;
@@ -81,7 +103,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           ? 0
           : _timetableRepo.periodsCountForDay(timetable, tomorrowName);
       if (!tomorrowIsWeekend) {
-        final reminders = await _reminderRepo.fetchRemindersForDay(tomorrowName);
+        final reminders =
+            await _reminderRepo.fetchRemindersForDay(tomorrowName);
         tomorrowReminderCount = reminders.length;
       }
     }
@@ -89,7 +112,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     final announcements = await _announcementRepo.fetchAnnouncements();
 
     emit(HomeLoaded(
-      role: event.role,
+      role: role,
       // TODO: Replace with a DashboardRepository.fetchStats() call once the
       // backend exposes aggregate statistics (total students, attendance %, etc.).
       stats: DummyData.dashboardStats,
@@ -115,7 +138,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     if (current is! HomeLoaded) return;
     final child = event.child;
 
-    // Optimistic switch — show the new child immediately while data reloads
     emit(current.copyWithSelectedChild(
       child: child,
       classTeacher: null,
@@ -124,11 +146,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     ));
 
     final classTeacher = await _studentRepo.fetchClassTeacher(
-      child.classGrade, child.section);
+        child.classGrade, child.section);
     final subjectTeachers = await _studentRepo.fetchSubjectTeachers(
-      child.classGrade, child.section);
+        child.classGrade, child.section);
     final timetable = await _timetableRepo.fetchTimetable(
-      child.classGrade, child.section);
+        child.classGrade, child.section);
     final todayPeriods =
         _timetableRepo.periodsCountForDay(timetable, _todayName());
     final tomorrow = DateTime.now().add(const Duration(days: 1));
@@ -139,7 +161,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         : _timetableRepo.periodsCountForDay(timetable, tomorrowName);
     int tomorrowReminderCount = 0;
     if (!tomorrowIsWeekend) {
-      final reminders = await _reminderRepo.fetchRemindersForDay(tomorrowName);
+      final reminders =
+          await _reminderRepo.fetchRemindersForDay(tomorrowName);
       tomorrowReminderCount = reminders.length;
     }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -95,15 +96,25 @@ class _AttendanceContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 32),
-      children: [
-        _buildHeader(context),
-        _buildSummaryCards(context),
-        _buildCalendar(context),
-        _buildLegend(context),
-        if (state.absentRecords.isNotEmpty) _buildAbsentList(context),
-      ],
+    return RefreshIndicator(
+      color: AppColors.primaryBrown,
+      onRefresh: () async {
+        final completer = Completer<void>();
+        context.read<AttendanceBloc>()
+            .add(AttendanceRefresh(student.id, completer: completer));
+        await completer.future;
+      },
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 32),
+        children: [
+          _buildHeader(context),
+          _buildSummaryCards(context),
+          _buildCalendar(context),
+          _buildLegend(context),
+          if (state.absentRecords.isNotEmpty) _buildAbsentList(context),
+        ],
+      ),
     );
   }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -13,7 +14,8 @@ import 'package:sgm_school_app/l10n/app_localizations.dart';
 
 class HomeworkScreen extends StatelessWidget {
   final StudentModel student;
-  const HomeworkScreen({super.key, required this.student});
+  final String initialFilter;
+  const HomeworkScreen({super.key, required this.student, this.initialFilter = 'All'});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +24,8 @@ class HomeworkScreen extends StatelessWidget {
         ..add(HomeworkFetch(
             classGrade: student.classGrade,
             section: student.section,
-            studentId: student.id)),
+            studentId: student.id,
+            initialFilter: initialFilter)),
       child: _HomeworkView(student: student),
     );
   }
@@ -77,7 +80,7 @@ class _HomeworkView extends StatelessWidget {
                     style: const TextStyle(color: AppColors.error)));
           }
           if (state is HomeworkLoaded) {
-            return _HomeworkContent(state: state);
+            return _HomeworkContent(state: state, student: student);
           }
           return const SizedBox();
         },
@@ -88,18 +91,32 @@ class _HomeworkView extends StatelessWidget {
 
 class _HomeworkContent extends StatelessWidget {
   final HomeworkLoaded state;
-  const _HomeworkContent({required this.state});
+  final StudentModel student;
+  const _HomeworkContent({required this.state, required this.student});
 
-  static const _filters = ['All', 'Pending', 'Submitted'];
+  static const _filters = ['All', 'Pending', 'Overdue', 'Submitted'];
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _buildStatsBar(context),
-        _buildFilterChips(context),
-        Expanded(child: _buildList(context)),
-      ],
+    return RefreshIndicator(
+      color: AppColors.primaryBrown,
+      onRefresh: () async {
+        final completer = Completer<void>();
+        context.read<HomeworkBloc>().add(HomeworkRefresh(
+          classGrade: student.classGrade,
+          section: student.section,
+          studentId: student.id,
+          completer: completer,
+        ));
+        await completer.future;
+      },
+      child: Column(
+        children: [
+          _buildStatsBar(context),
+          _buildFilterChips(context),
+          Expanded(child: _buildList(context)),
+        ],
+      ),
     );
   }
 
@@ -143,14 +160,18 @@ class _HomeworkContent extends StatelessWidget {
     return Container(
       color: AppColors.surface,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: _filters.map((f) {
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _filters.map((f) {
           final isSelected = state.filter == f;
           final displayLabel = f == 'All'
               ? l10n.filterAll
               : f == 'Pending'
                   ? l10n.homeworkStatPending
-                  : l10n.homeworkStatSubmitted;
+                  : f == 'Overdue'
+                      ? l10n.homeworkStatOverdue
+                      : l10n.homeworkStatSubmitted;
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
@@ -180,6 +201,7 @@ class _HomeworkContent extends StatelessWidget {
             ),
           );
         }).toList(),
+        ),
       ),
     );
   }
@@ -193,7 +215,9 @@ class _HomeworkContent extends StatelessWidget {
           ? l10n.homeworkEmpty
           : state.filter == 'Pending'
               ? l10n.homeworkEmptyPending
-              : l10n.homeworkEmptySubmitted;
+              : state.filter == 'Overdue'
+                  ? l10n.homeworkEmptyPending
+                  : l10n.homeworkEmptySubmitted;
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -212,6 +236,7 @@ class _HomeworkContent extends StatelessWidget {
     }
 
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       itemCount: items.length,
       itemBuilder: (context, i) => _HomeworkCard(item: items[i]),

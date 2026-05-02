@@ -8,6 +8,11 @@ class ParentModel extends Equatable {
 
   String get firstName => name.split(' ').first;
 
+  factory ParentModel.fromJson(Map<String, dynamic> json) => ParentModel(
+        id: json['id'] as String,
+        name: json['name'] as String,
+      );
+
   @override
   List<Object?> get props => [id];
 }

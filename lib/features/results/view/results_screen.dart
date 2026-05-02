@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -41,15 +42,24 @@ class _ResultsView extends StatelessWidget {
       body: BlocBuilder<ResultsBloc, ResultsState>(
         builder: (context, state) {
           final classStats = state is ResultsLoaded ? state.classStats : null;
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _buildHeader(context, classStats),
-              const SizedBox(height: 16),
-              _buildChart(context, classStats),
-              const SizedBox(height: 16),
-              _buildSubjectList(context, classStats),
-            ],
+          return RefreshIndicator(
+            color: AppColors.primaryBrown,
+            onRefresh: () async {
+              final completer = Completer<void>();
+              context.read<ResultsBloc>().add(ResultsRefresh(completer: completer));
+              await completer.future;
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              children: [
+                _buildHeader(context, classStats),
+                const SizedBox(height: 16),
+                _buildChart(context, classStats),
+                const SizedBox(height: 16),
+                _buildSubjectList(context, classStats),
+              ],
+            ),
           );
         },
       ),

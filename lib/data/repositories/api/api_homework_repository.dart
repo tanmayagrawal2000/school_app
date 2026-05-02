@@ -1,3 +1,4 @@
+import '../../../core/cache/app_cache.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../models/homework_model.dart';
@@ -53,13 +54,19 @@ class ApiHomeworkRepository implements HomeworkRepository {
   @override
   Future<List<HomeworkItem>> fetchHomework(
       String classGrade, String section, String studentId) async {
+    final key = AppCache.homework(classGrade, section, studentId);
+    final cached = AppCache.get<List<HomeworkItem>>(key, AppCache.shortTtl);
+    if (cached != null) return cached;
+
     final list = await _client.getList(ApiEndpoints.homework,
         queryParams: {
           'classGrade': classGrade,
           'section': section,
           'studentId': studentId,
         });
-    return list.map(HomeworkItem.fromJson).toList();
+    final result = list.map(HomeworkItem.fromJson).toList();
+    AppCache.set(key, result);
+    return result;
   }
 
   /// PUT `/academic/homework/{hwId}/submissions`
@@ -83,6 +90,8 @@ class ApiHomeworkRepository implements HomeworkRepository {
       ApiEndpoints.homeworkSubmissions(hwId),
       body: {'submittedStudentIds': submittedIds.toList()},
     );
+    // Invalidate submission-related cache entries for this homework.
+    AppCache.invalidateWhere((k) => k.contains(hwId));
   }
 
   /// GET `/academic/homework/by-teacher?teacherName={teacherName}`
@@ -102,16 +111,24 @@ class ApiHomeworkRepository implements HomeworkRepository {
   @override
   Future<Map<String, List<HomeworkItem>>> fetchHomeworkByTeacher(
       String teacherName) async {
+    final key = AppCache.homeworkByTeacher(teacherName);
+    final cached = AppCache.get<Map<String, List<HomeworkItem>>>(key, AppCache.shortTtl);
+    if (cached != null) return cached;
+
     final json = await _client.get(
       ApiEndpoints.homeworkByTeacher,
       queryParams: {'teacherName': teacherName},
     );
-    return (json as Map<String, dynamic>).map(
-      (key, value) => MapEntry(
-        key,
-        (value as List).map(HomeworkItem.fromJson).toList(),
+    final result = json.map(
+      (cls, value) => MapEntry(
+        cls,
+        (value as List)
+            .map((e) => HomeworkItem.fromJson(e as Map<String, dynamic>))
+            .toList(),
       ),
     );
+    AppCache.set(key, result);
+    return result;
   }
 
   /// GET `/classes/{grade}/{section}/roster`
@@ -128,11 +145,15 @@ class ApiHomeworkRepository implements HomeworkRepository {
   @override
   Future<List<RosterStudent>> fetchClassRoster(
       String classGrade, String section) async {
+    final key = AppCache.classRoster(classGrade, section);
+    final cached = AppCache.get<List<RosterStudent>>(key, AppCache.mediumTtl);
+    if (cached != null) return cached;
+
     final list = await _client.getList(
         ApiEndpoints.classRoster(classGrade, section));
-    return list
-        .map((e) => RosterStudent.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final result = list.map(RosterStudent.fromJson).toList();
+    AppCache.set(key, result);
+    return result;
   }
 
   /// GET `/academic/homework/{hwId}/submission-count?grade={grade}&section={section}`
@@ -141,11 +162,17 @@ class ApiHomeworkRepository implements HomeworkRepository {
   @override
   Future<int> fetchSubmittedCount(
       String hwId, String classGrade, String section) async {
+    final key = AppCache.submittedCount(hwId, classGrade, section);
+    final cached = AppCache.get<int>(key, AppCache.shortTtl);
+    if (cached != null) return cached;
+
     final json = await _client.get(
       ApiEndpoints.homeworkSubmissionCount(hwId),
       queryParams: {'grade': classGrade, 'section': section},
     );
-    return (json as Map<String, dynamic>)['count'] as int;
+    final result = json['count'] as int;
+    AppCache.set(key, result);
+    return result;
   }
 
   /// GET `/academic/homework/{hwId}/submitted/{studentId}`
@@ -153,9 +180,15 @@ class ApiHomeworkRepository implements HomeworkRepository {
   /// Sample response: `{ "submitted": true }`
   @override
   Future<bool> fetchIsSubmittedBy(String hwId, String studentId) async {
+    final key = AppCache.isSubmittedBy(hwId, studentId);
+    final cached = AppCache.get<bool>(key, AppCache.shortTtl);
+    if (cached != null) return cached;
+
     final json = await _client.get(
         ApiEndpoints.homeworkSubmittedBy(hwId, studentId));
-    return (json as Map<String, dynamic>)['submitted'] as bool;
+    final result = json['submitted'] as bool;
+    AppCache.set(key, result);
+    return result;
   }
 
   /// GET `/academic/pending-submissions?grade={grade}&section={section}&subject={subject}`
@@ -181,6 +214,10 @@ class ApiHomeworkRepository implements HomeworkRepository {
   @override
   Future<List<PendingHomeworkEntry>> fetchPendingSubmissions(
       String classGrade, String section, {String? subjectFilter}) async {
+    final key = AppCache.pendingSubmissions(classGrade, section, subjectFilter);
+    final cached = AppCache.get<List<PendingHomeworkEntry>>(key, AppCache.shortTtl);
+    if (cached != null) return cached;
+
     final params = <String, String>{
       'grade': classGrade,
       'section': section,
@@ -188,8 +225,8 @@ class ApiHomeworkRepository implements HomeworkRepository {
     if (subjectFilter != null) params['subject'] = subjectFilter;
     final list = await _client.getList(
         ApiEndpoints.pendingSubmissions, queryParams: params);
-    return list
-        .map((e) => PendingHomeworkEntry.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final result = list.map(PendingHomeworkEntry.fromJson).toList();
+    AppCache.set(key, result);
+    return result;
   }
 }

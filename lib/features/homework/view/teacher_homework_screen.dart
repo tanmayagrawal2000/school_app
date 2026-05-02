@@ -29,9 +29,9 @@ class _TeacherHomeworkScreenState extends State<TeacherHomeworkScreen> {
     _reload();
   }
 
-  Future<void> _reload() async {
+  Future<void> _reload({bool showLoading = true}) async {
     if (!mounted) return;
-    setState(() => _loading = true);
+    if (showLoading) setState(() => _loading = true);
 
     final repo = context.read<HomeworkRepository>();
     final byClass = await repo.fetchHomeworkByTeacher(widget.teacherName);
@@ -110,34 +110,41 @@ class _TeacherHomeworkScreenState extends State<TeacherHomeworkScreen> {
           ? const Center(
               child:
                   CircularProgressIndicator(color: AppColors.primaryBrown))
-          : Column(
-              children: [
-                _buildFilterBar(context),
-                Expanded(
-                  child: entries.isEmpty
-                      ? _EmptyState(filter: _filter)
-                      : ListView.builder(
-                          padding:
-                              const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                          itemCount: entries.length,
-                          itemBuilder: (context, i) => _HomeworkCard(
-                            entry: entries[i],
-                            onTap: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      TeacherMarkSubmissionsScreen(
-                                    entry: entries[i],
+          : RefreshIndicator(
+              color: AppColors.primaryBrown,
+              onRefresh: () => _reload(showLoading: false),
+              child: Column(
+                children: [
+                  _buildFilterBar(context),
+                  Expanded(
+                    child: entries.isEmpty
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [_EmptyState(filter: _filter)],
+                          )
+                        : ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                            itemCount: entries.length,
+                            itemBuilder: (context, i) => _HomeworkCard(
+                              entry: entries[i],
+                              onTap: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        TeacherMarkSubmissionsScreen(
+                                      entry: entries[i],
+                                    ),
                                   ),
-                                ),
-                              );
-                              _reload();
-                            },
+                                );
+                                _reload();
+                              },
+                            ),
                           ),
-                        ),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
     );
   }

@@ -83,16 +83,21 @@ class _SubjectPerformanceScreenState extends State<SubjectPerformanceScreen> {
       body: _loading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primaryBrown))
-          : ListView(
-              padding: const EdgeInsets.only(bottom: 32),
-              children: [
-                _buildHeader(context, avg, _students.length, subjectModel),
-                if (atRisk.isNotEmpty) _buildAtRiskStrip(context, atRisk.length),
-                if (_students.isEmpty)
-                  _buildEmpty(context)
-                else
-                  _buildStudentList(context, _students),
-              ],
+          : RefreshIndicator(
+              color: AppColors.primaryBrown,
+              onRefresh: _loadData,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 32),
+                children: [
+                  _buildHeader(context, avg, _students.length, subjectModel),
+                  if (atRisk.isNotEmpty) _buildAtRiskStrip(context, atRisk.length),
+                  if (_students.isEmpty)
+                    _buildEmpty(context)
+                  else
+                    _buildStudentList(context, _students),
+                ],
+              ),
             ),
     );
   }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 
 abstract class FeesEvent extends Equatable {
@@ -11,4 +12,9 @@ class FeesFetch extends FeesEvent {
   const FeesFetch(this.studentId);
   @override
   List<Object?> get props => [studentId];
+}
+
+class FeesRefresh extends FeesEvent {
+  final Completer<void>? completer;
+  const FeesRefresh({this.completer});
 }

@@ -1,3 +1,4 @@
+import '../../../core/cache/app_cache.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../models/teacher_class_summary.dart';
@@ -35,8 +36,14 @@ class ApiTeacherRepository implements TeacherRepository {
   /// ```
   @override
   Future<TeacherModel> fetchCurrentTeacher() async {
+    final key = AppCache.currentTeacher();
+    final cached = AppCache.get<TeacherModel>(key, AppCache.mediumTtl);
+    if (cached != null) return cached;
+
     final json = await _client.get(ApiEndpoints.currentTeacher);
-    return TeacherModel.fromJson(json as Map<String, dynamic>);
+    final result = TeacherModel.fromJson(json);
+    AppCache.set(key, result);
+    return result;
   }
 
   /// GET `/teachers/me/class-summaries?day=Monday`
@@ -64,13 +71,17 @@ class ApiTeacherRepository implements TeacherRepository {
   @override
   Future<List<TeacherClassSummary>> fetchClassSummaries(
       TeacherModel teacher, String dayName) async {
-    final json = await _client.get(
+    final key = AppCache.teacherClasses(teacher.name, dayName);
+    final cached = AppCache.get<List<TeacherClassSummary>>(key, AppCache.shortTtl);
+    if (cached != null) return cached;
+
+    final list = await _client.getList(
       ApiEndpoints.teacherClassSummaries,
       queryParams: {'day': dayName},
     );
-    return (json as List)
-        .map((e) => TeacherClassSummary.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final result = list.map(TeacherClassSummary.fromJson).toList();
+    AppCache.set(key, result);
+    return result;
   }
 
   /// GET `/teachers/me/schedule`
@@ -91,8 +102,12 @@ class ApiTeacherRepository implements TeacherRepository {
   @override
   Future<Map<String, List<TimetablePeriod>>> fetchSchedule(
       String teacherName) async {
+    final key = AppCache.teacherSchedule(teacherName);
+    final cached = AppCache.get<Map<String, List<TimetablePeriod>>>(key, AppCache.longTtl);
+    if (cached != null) return cached;
+
     final json = await _client.get(ApiEndpoints.teacherSchedule);
-    return (json as Map<String, dynamic>).map(
+    final result = json.map(
       (day, periods) => MapEntry(
         day,
         (periods as List)
@@ -100,5 +115,7 @@ class ApiTeacherRepository implements TeacherRepository {
             .toList(),
       ),
     );
+    AppCache.set(key, result);
+    return result;
   }
 }

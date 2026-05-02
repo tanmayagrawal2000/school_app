@@ -14,4 +14,13 @@ class ClassReminderModel {
     required this.message,
     required this.type,
   });
+
+  factory ClassReminderModel.fromJson(Map<String, dynamic> json) =>
+      ClassReminderModel(
+        id: json['id'] as String,
+        subject: json['subject'] as String,
+        teacherName: (json['teacherName'] as String?) ?? '',
+        message: json['message'] as String,
+        type: ReminderType.values.byName(json['type'] as String),
+      );
 }

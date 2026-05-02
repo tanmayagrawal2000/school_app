@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/cache/app_cache.dart';
 import '../../../data/repositories/timetable_repository.dart';
 import 'timetable_event.dart';
 import 'timetable_state.dart';
@@ -8,6 +9,7 @@ class TimetableBloc extends Bloc<TimetableEvent, TimetableState> {
 
   TimetableBloc(this._repository) : super(TimetableInitial()) {
     on<TimetableFetch>(_onFetch);
+    on<TimetableRefresh>(_onRefresh);
     on<TimetableSelectDay>(_onSelectDay);
   }
 
@@ -20,13 +22,32 @@ class TimetableBloc extends Bloc<TimetableEvent, TimetableState> {
       event.classGrade,
       event.section,
     );
-    final today = _todayName();
     emit(TimetableLoaded(
       timetable: timetable,
-      selectedDay: today,
+      selectedDay: _todayName(),
       classGrade: event.classGrade,
       section: event.section,
     ));
+  }
+
+  Future<void> _onRefresh(
+    TimetableRefresh event,
+    Emitter<TimetableState> emit,
+  ) async {
+    final current = state;
+    if (current is! TimetableLoaded) { event.completer?.complete(); return; }
+    AppCache.clear();
+    final timetable = await _repository.fetchTimetable(
+      current.classGrade,
+      current.section,
+    );
+    emit(TimetableLoaded(
+      timetable: timetable,
+      selectedDay: current.selectedDay,
+      classGrade: current.classGrade,
+      section: current.section,
+    ));
+    event.completer?.complete();
   }
 
   void _onSelectDay(TimetableSelectDay event, Emitter<TimetableState> emit) {
@@ -41,7 +62,6 @@ class TimetableBloc extends Bloc<TimetableEvent, TimetableState> {
       'Friday', 'Saturday', 'Sunday',
     ];
     final idx = DateTime.now().weekday - 1;
-    // Default to Monday on Sunday (no school)
     return idx < 6 ? days[idx] : days[0];
   }
 }

@@ -1,3 +1,4 @@
+import '../../../core/cache/app_cache.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../models/timetable_model.dart';
@@ -42,10 +43,14 @@ class ApiTimetableRepository implements TimetableRepository {
   @override
   Future<Map<String, List<TimetablePeriod>>> fetchTimetable(
       String classGrade, String section) async {
+    final key = AppCache.timetable(classGrade, section);
+    final cached = AppCache.get<Map<String, List<TimetablePeriod>>>(key, AppCache.longTtl);
+    if (cached != null) return cached;
+
     final data = await _client.get(ApiEndpoints.timetable,
         queryParams: {'classGrade': classGrade, 'section': section});
     // API returns { "Monday": [...], "Tuesday": [...], ... }
-    return data.map(
+    final result = data.map(
       (day, periods) => MapEntry(
         day,
         (periods as List)
@@ -53,6 +58,8 @@ class ApiTimetableRepository implements TimetableRepository {
             .toList(),
       ),
     );
+    AppCache.set(key, result);
+    return result;
   }
 
   @override

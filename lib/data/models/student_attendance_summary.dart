@@ -25,6 +25,17 @@ class StudentAttendanceSummary extends Equatable {
 
   String get firstName => name.split(' ').first;
 
+  factory StudentAttendanceSummary.fromJson(Map<String, dynamic> json) =>
+      StudentAttendanceSummary(
+        name: json['name'] as String,
+        photoInitials: json['photoInitials'] as String,
+        avatarColorIndex: json['avatarColorIndex'] as int,
+        presentDays: json['presentDays'] as int,
+        absentDays: json['absentDays'] as int,
+        lateDays: json['lateDays'] as int,
+        totalWorkingDays: json['totalWorkingDays'] as int,
+      );
+
   @override
   List<Object?> get props => [name, avatarColorIndex];
 }

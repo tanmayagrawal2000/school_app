@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 
 abstract class TimetableEvent extends Equatable {
@@ -19,4 +20,9 @@ class TimetableSelectDay extends TimetableEvent {
   const TimetableSelectDay(this.dayName);
   @override
   List<Object?> get props => [dayName];
+}
+
+class TimetableRefresh extends TimetableEvent {
+  final Completer<void>? completer;
+  const TimetableRefresh({this.completer});
 }

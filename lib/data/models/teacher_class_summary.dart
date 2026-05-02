@@ -27,6 +27,18 @@ class TeacherClassSummary extends Equatable {
   double get subjectAvg =>
       classStats.statFor(subject)?.classAverage ?? classStats.classOverallAverage;
 
+  factory TeacherClassSummary.fromJson(Map<String, dynamic> json) =>
+      TeacherClassSummary(
+        classGrade: json['classGrade'] as String,
+        section: json['section'] as String,
+        isIncharge: json['isIncharge'] as bool,
+        subject: json['subject'] as String,
+        classStats: ClassStats.fromJson(json['classStats'] as Map<String, dynamic>),
+        attendancePercent: (json['attendancePercent'] as num?)?.toDouble(),
+        pendingHomework: json['pendingHomework'] as int,
+        todayPeriods: json['todayPeriods'] as int,
+      );
+
   @override
   List<Object?> get props => [classGrade, section, isIncharge, subject];
 }

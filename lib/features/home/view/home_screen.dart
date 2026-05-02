@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/enums/user_role.dart';
@@ -205,24 +206,33 @@ class _DashboardTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<HomeBloc, HomeState>(
       builder: (context, state) {
-        return CustomScrollView(
-          slivers: [
-            _buildSliverAppBar(context, state),
-            if (state is HomeLoading)
-              const SliverFillRemaining(
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.primaryBrown),
-                ),
-              )
-            else if (state is HomeLoaded) ...[
-              SliverToBoxAdapter(child: _buildOverviewSection(context, state)),
-              if (!state.isTeacher)
-                SliverToBoxAdapter(child: _buildMyTeachersSection(context, state)),
-              SliverToBoxAdapter(child: _buildQuickActions(context, state)),
-              SliverToBoxAdapter(child: _buildAnnouncementsSection(context, state)),
-              const SliverToBoxAdapter(child: SizedBox(height: 16)),
+        return RefreshIndicator(
+          color: AppColors.primaryBrown,
+          onRefresh: () async {
+            final completer = Completer<void>();
+            context.read<HomeBloc>().add(HomeRefresh(completer: completer));
+            await completer.future;
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              _buildSliverAppBar(context, state),
+              if (state is HomeLoading)
+                const SliverFillRemaining(
+                  child: Center(
+                    child: CircularProgressIndicator(color: AppColors.primaryBrown),
+                  ),
+                )
+              else if (state is HomeLoaded) ...[
+                SliverToBoxAdapter(child: _buildOverviewSection(context, state)),
+                if (!state.isTeacher)
+                  SliverToBoxAdapter(child: _buildMyTeachersSection(context, state)),
+                SliverToBoxAdapter(child: _buildQuickActions(context, state)),
+                SliverToBoxAdapter(child: _buildAnnouncementsSection(context, state)),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
             ],
-          ],
+          ),
         );
       },
     );
@@ -2484,7 +2494,7 @@ class _ParentMonitorRow extends StatelessWidget {
               child: _MonitorCell(
                 icon: Icons.how_to_reg_outlined,
                 label: l10n.homeStatMyAttendance,
-                value: '${pct.toStringAsFixed(0)}%',
+                value: '${pct.toStringAsFixed(1)}%',
                 color: attendanceColor,
                 onTap: onAttendanceTap,
               ),
@@ -2713,6 +2723,15 @@ class _ParentAlertsCardState extends State<_ParentAlertsCard> {
         icon: Icons.library_books_outlined,
         color: AppColors.error,
         message: l10n.homeParentOverdueHomework(_overdueHomeworkCount),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => HomeworkScreen(
+              student: widget.student,
+              initialFilter: 'Overdue',
+            ),
+          ),
+        ),
       ));
     }
     return alerts;
@@ -2723,8 +2742,9 @@ class _AlertData {
   final IconData icon;
   final Color color;
   final String message;
+  final VoidCallback? onTap;
   const _AlertData(
-      {required this.icon, required this.color, required this.message});
+      {required this.icon, required this.color, required this.message, this.onTap});
 }
 
 class _AlertRow extends StatelessWidget {
@@ -2733,7 +2753,7 @@ class _AlertRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final row = Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
@@ -2756,8 +2776,13 @@ class _AlertRow extends StatelessWidget {
                   ?.copyWith(color: AppColors.textSecondary),
             ),
           ),
+          if (alert.onTap != null)
+            Icon(Icons.chevron_right, size: 16, color: alert.color),
         ],
       ),
     );
+
+    if (alert.onTap == null) return row;
+    return GestureDetector(onTap: alert.onTap, child: row);
   }
 }

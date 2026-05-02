@@ -31,6 +31,15 @@ class StudentSubjectMark extends Equatable {
 
   String get firstName => name.split(' ').first;
 
+  factory StudentSubjectMark.fromJson(Map<String, dynamic> json) =>
+      StudentSubjectMark(
+        name: json['name'] as String,
+        photoInitials: json['photoInitials'] as String,
+        avatarColorIndex: json['avatarColorIndex'] as int,
+        marks: json['marks'] as int,
+        maxMarks: json['maxMarks'] as int,
+      );
+
   @override
   List<Object?> get props => [name, avatarColorIndex, marks];
 }

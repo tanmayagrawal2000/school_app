@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sgm_school_app/l10n/app_localizations.dart';
@@ -60,6 +61,21 @@ class _TimetableScreenState extends State<TimetableScreen> {
     if (homeState is HomeLoaded) _setupFromHomeState(homeState);
   }
 
+  Future<void> _onRefresh() async {
+    // For teacher: re-fetch schedule; for everyone: refresh TimetableBloc data.
+    if (_isTeacherMode) {
+      final homeState = context.read<HomeBloc>().state;
+      if (homeState is HomeLoaded) await _setupFromHomeState(homeState);
+      if (!mounted) return;
+    }
+    final bloc = context.read<TimetableBloc>();
+    if (bloc.state is TimetableLoaded) {
+      final completer = Completer<void>();
+      bloc.add(TimetableRefresh(completer: completer));
+      await completer.future;
+    }
+  }
+
   Future<void> _setupFromHomeState(HomeLoaded state) async {
     if (state.isTeacher && state.currentTeacher != null) {
       final teacher = state.currentTeacher!;
@@ -119,9 +135,13 @@ class _TimetableScreenState extends State<TimetableScreen> {
             ),
         ],
       ),
-      body: _isTeacherMode
-          ? _buildTeacherBody(context)
-          : _buildStudentParentBody(context),
+      body: RefreshIndicator(
+        color: AppColors.primaryBrown,
+        onRefresh: _onRefresh,
+        child: _isTeacherMode
+            ? _buildTeacherBody(context)
+            : _buildStudentParentBody(context),
+      ),
     );
 
     // Listen for the initial HomeLoaded event (covers the race where IndexedStack
@@ -209,6 +229,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
       );
     }
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       itemCount: periods.length,
       itemBuilder: (context, i) => _PeriodCard(
@@ -230,6 +251,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
         if (state is TimetableLoaded) {
           final periods = state.timetable[_selectedDay] ?? [];
           return ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             itemCount: periods.length,
             itemBuilder: (context, i) => _PeriodCard(
@@ -259,6 +281,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
               _buildDaySelector(context),
               Expanded(
                 child: ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 12),
                   itemCount: state.periodsForSelectedDay.length,

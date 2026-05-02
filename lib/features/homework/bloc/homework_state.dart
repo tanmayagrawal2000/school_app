@@ -23,6 +23,8 @@ class HomeworkLoaded extends HomeworkState {
         return allItems.where((h) => !h.isSubmitted).toList();
       case 'Submitted':
         return allItems.where((h) => h.isSubmitted).toList();
+      case 'Overdue':
+        return allItems.where((h) => h.isOverdue).toList();
       default:
         return allItems;
     }

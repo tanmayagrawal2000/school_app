@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sgm_school_app/l10n/app_localizations.dart';
@@ -24,19 +25,30 @@ class StudentListScreen extends StatefulWidget {
 
 class _StudentListScreenState extends State<StudentListScreen> {
   final _searchCtrl = TextEditingController();
+  final _scrollCtrl = ScrollController();
   String _searchQuery = '';
   String? _selectedClass; // null = show all teacher classes
+  int _displayCount = 20;
 
   @override
   void initState() {
     super.initState();
     context.read<StudentBloc>().add(const StudentFetchAll());
+    _scrollCtrl.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _scrollCtrl.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    final max = _scrollCtrl.position.maxScrollExtent;
+    if (max > 0 && _scrollCtrl.offset >= max * 0.85) {
+      setState(() => _displayCount += 20);
+    }
   }
 
   List<StudentModel> _applyFilters(List<StudentModel> all) {
@@ -100,7 +112,16 @@ class _StudentListScreenState extends State<StudentListScreen> {
                 if (state is StudentListLoaded) {
                   final students = _applyFilters(state.students);
                   if (students.isEmpty) return _buildEmpty(l10n);
-                  return _buildList(students);
+                  return RefreshIndicator(
+                    color: AppColors.primaryBrown,
+                    onRefresh: () async {
+                      setState(() => _displayCount = 20);
+                      final completer = Completer<void>();
+                      context.read<StudentBloc>().add(StudentRefresh(completer: completer));
+                      await completer.future;
+                    },
+                    child: _buildList(students),
+                  );
                 }
                 return const SizedBox();
               },
@@ -161,9 +182,12 @@ class _StudentListScreenState extends State<StudentListScreen> {
   }
 
   Widget _buildList(List<StudentModel> students) {
+    final count = students.length < _displayCount ? students.length : _displayCount;
     return ListView.builder(
+      controller: _scrollCtrl,
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: students.length,
+      itemCount: count,
       itemBuilder: (context, index) {
         return _StudentCard(student: students[index], teacherName: widget.teacherName);
       },

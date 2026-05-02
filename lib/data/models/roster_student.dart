@@ -12,4 +12,11 @@ class RosterStudent {
   });
 
   String get firstName => name.split(' ').first;
+
+  factory RosterStudent.fromJson(Map<String, dynamic> json) => RosterStudent(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        photoInitials: json['photoInitials'] as String,
+        avatarColorIndex: json['avatarColorIndex'] as int,
+      );
 }

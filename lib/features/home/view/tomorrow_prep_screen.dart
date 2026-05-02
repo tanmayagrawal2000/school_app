@@ -103,13 +103,18 @@ class _TomorrowPrepScreenState extends State<TomorrowPrepScreen> {
               child: CircularProgressIndicator(color: AppColors.primaryBrown))
           : _isWeekend
               ? _buildWeekendView(context)
-              : ListView(
-                  padding: const EdgeInsets.only(bottom: 32),
-                  children: [
-                    if (_reminders.isNotEmpty || _dueHomework.isNotEmpty)
-                      _buildPackingList(context),
-                    _buildSchedule(context),
-                  ],
+              : RefreshIndicator(
+                  color: AppColors.primaryBrown,
+                  onRefresh: _loadData,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.only(bottom: 32),
+                    children: [
+                      if (_reminders.isNotEmpty || _dueHomework.isNotEmpty)
+                        _buildPackingList(context),
+                      _buildSchedule(context),
+                    ],
+                  ),
                 ),
     );
   }

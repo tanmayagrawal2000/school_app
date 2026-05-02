@@ -1,3 +1,4 @@
+import '../../../core/cache/app_cache.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../models/announcement_model.dart';
@@ -56,7 +57,13 @@ class ApiAnnouncementRepository implements AnnouncementRepository {
   /// Valid type values: `exam` | `holiday` | `event` | `general` | `fee` | `sports`
   @override
   Future<List<AnnouncementModel>> fetchAnnouncements() async {
+    final key = AppCache.announcements();
+    final cached = AppCache.get<List<AnnouncementModel>>(key, AppCache.shortTtl);
+    if (cached != null) return cached;
+
     final list = await _client.getList(ApiEndpoints.announcements);
-    return list.map(AnnouncementModel.fromJson).toList();
+    final result = list.map(AnnouncementModel.fromJson).toList();
+    AppCache.set(key, result);
+    return result;
   }
 }

@@ -47,9 +47,9 @@ class DummyData {
           house: 'Tagore',
           photoInitials: 'AS',
           avatarColorIndex: 0,
-          feeStatus: 'Paid',
+          feeStatus: 'Partial',
           totalFee: 45000,
-          paidFee: 45000,
+          paidFee: 22500,
           results: [
             const SubjectResult(subject: 'Mathematics', maxMarks: 100, obtainedMarks: 92, grade: 'A1'),
             const SubjectResult(subject: 'Science', maxMarks: 100, obtainedMarks: 88, grade: 'A2'),
@@ -169,13 +169,13 @@ class DummyData {
           address: '33, Kidwai Nagar, Kanpur – 208011',
           busRoute: 'Route 2',
           busNumber: 'UP32 CY 7832',
-          attendancePercent: 83.6,
+          attendancePercent: 71.2,
           house: 'Bose',
           photoInitials: 'VT',
           avatarColorIndex: 4,
-          feeStatus: 'Paid',
+          feeStatus: 'Overdue',
           totalFee: 33000,
-          paidFee: 33000,
+          paidFee: 0,
           results: [
             const SubjectResult(subject: 'Mathematics', maxMarks: 100, obtainedMarks: 71, grade: 'B1'),
             const SubjectResult(subject: 'Science', maxMarks: 100, obtainedMarks: 68, grade: 'B2'),
@@ -849,6 +849,39 @@ class DummyData {
           type: AnnouncementType.general,
           postedBy: "Principal's Office",
         ),
+        AnnouncementModel(
+          id: 'a007',
+          title: 'Unit Test – 8th May 2026',
+          body: 'Unit Test for classes 9–12 will be held on 8th May 2026. Syllabus covers all topics taught up to 30th April. Students must carry their school ID and stationery. No electronic devices are permitted.',
+          date: DateTime(2026, 5, 8),
+          type: AnnouncementType.exam,
+          isPinned: true,
+          postedBy: "Principal's Office",
+        ),
+        AnnouncementModel(
+          id: 'a008',
+          title: 'Inter-House Cricket Tournament – 5th May',
+          body: 'The Inter-House Cricket Tournament will be held on 5th May 2026 at the school ground from 8:00 AM. All student participants must report to the PT teacher by 7:45 AM. Parents are welcome to cheer.',
+          date: DateTime(2026, 5, 5),
+          type: AnnouncementType.sports,
+          postedBy: 'Sports Committee',
+        ),
+        AnnouncementModel(
+          id: 'a009',
+          title: 'Buddha Purnima – School Holiday',
+          body: 'The school will remain closed on 12th May 2026 on account of Buddha Purnima. All scheduled classes and activities for that day stand postponed. Regular classes resume on 13th May.',
+          date: DateTime(2026, 5, 12),
+          type: AnnouncementType.holiday,
+          postedBy: 'Administration',
+        ),
+        AnnouncementModel(
+          id: 'a010',
+          title: 'Annual Science Fair – 20th May 2026',
+          body: 'SGM International School\'s Annual Science Fair is scheduled for 20th May 2026. Students from classes 6–12 are encouraged to present working models and research projects. Registrations close 14th May.',
+          date: DateTime(2026, 5, 20),
+          type: AnnouncementType.event,
+          postedBy: 'Science Department',
+        ),
       ];
 
   // ──────────────────────── TIMETABLE ──────────────────────────
@@ -1135,52 +1168,66 @@ class DummyData {
   }
 
   // ──────────────────────── ATTENDANCE ─────────────────────────
+  // School holidays for academic year 2025-26
+  static final Set<DateTime> _schoolHolidays = {
+    DateTime(2025, 5, 1),   // Labour Day
+    DateTime(2025, 8, 15),  // Independence Day
+    DateTime(2025, 10, 2),  // Gandhi Jayanti
+    DateTime(2025, 10, 20), // Diwali
+    DateTime(2025, 10, 21),
+    DateTime(2025, 10, 22),
+    DateTime(2025, 11, 14), // Children's Day
+    DateTime(2025, 12, 25), // Christmas
+    DateTime(2026, 1, 14),  // Makar Sankranti
+    DateTime(2026, 1, 26),  // Republic Day
+    DateTime(2026, 3, 14),  // Holi
+    DateTime(2026, 4, 14),  // Ambedkar Jayanti / Baisakhi
+    DateTime(2026, 4, 18),  // Good Friday
+    DateTime(2026, 5, 12),  // Buddha Purnima
+  };
+
   static List<AttendanceRecord> generateAttendance(
     String studentId, {
     double targetPercent = 85.0,
   }) {
-    final now = DateTime.now();
-    final seed =
-        int.parse(studentId.replaceAll(RegExp(r'[^0-9]'), '0'));
+    final today = DateTime.now();
+    final todayMidnight = DateTime(today.year, today.month, today.day);
+    final seed = int.parse(studentId.replaceAll(RegExp(r'[^0-9]'), '0'));
 
-    // Collect working days up to today (exclude Sunday and fixed holidays)
-    final workingDays = <int>[];
-    for (int i = 1; i <= 27; i++) {
-      final date = DateTime(now.year, now.month, i);
-      if (date.isAfter(now)) break;
-      if (date.weekday == DateTime.sunday || i == 14 || i == 15) continue;
-      workingDays.add(i);
+    // Cover the full academic year: 1 Apr 2025 → today
+    final start = DateTime(2025, 4, 1);
+
+    // Collect all working days in the range
+    final workingDays = <DateTime>[];
+    for (var d = start; !d.isAfter(todayMidnight); d = d.add(const Duration(days: 1))) {
+      if (d.weekday == DateTime.sunday) continue;
+      if (_schoolHolidays.contains(d)) continue;
+      workingDays.add(d);
     }
 
-    // Derive absent-day indices from targetPercent, seeded by student ID
+    // Derive absent dates seeded by student ID
     final absentCount =
         ((1 - targetPercent / 100) * workingDays.length).round();
-    final absentDays = <int>{};
+    final absentDates = <DateTime>{};
     for (int k = 0;
-        absentDays.length < absentCount && k < workingDays.length * 10;
+        absentDates.length < absentCount && k < workingDays.length * 10;
         k++) {
-      absentDays.add(workingDays[(seed + k * 7) % workingDays.length]);
+      absentDates.add(workingDays[(seed + k * 7) % workingDays.length]);
     }
 
-    // Build the full record list
+    // Build records for every calendar day in range
     final records = <AttendanceRecord>[];
-    for (int i = 1; i <= 27; i++) {
-      final date = DateTime(now.year, now.month, i);
-      if (date.isAfter(now)) break;
-      if (date.weekday == DateTime.sunday) {
-        records.add(
-            AttendanceRecord(date: date, status: AttendanceStatus.sunday));
-        continue;
+    for (var d = start; !d.isAfter(todayMidnight); d = d.add(const Duration(days: 1))) {
+      if (d.weekday == DateTime.sunday) {
+        records.add(AttendanceRecord(date: d, status: AttendanceStatus.sunday));
+      } else if (_schoolHolidays.contains(d)) {
+        records.add(AttendanceRecord(date: d, status: AttendanceStatus.holiday));
+      } else {
+        final status = absentDates.contains(d)
+            ? AttendanceStatus.absent
+            : AttendanceStatus.present;
+        records.add(AttendanceRecord(date: d, status: status));
       }
-      if (i == 14 || i == 15) {
-        records.add(
-            AttendanceRecord(date: date, status: AttendanceStatus.holiday));
-        continue;
-      }
-      final status = absentDays.contains(i)
-          ? AttendanceStatus.absent
-          : AttendanceStatus.present;
-      records.add(AttendanceRecord(date: date, status: status));
     }
     return records;
   }

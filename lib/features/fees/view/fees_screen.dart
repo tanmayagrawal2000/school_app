@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -68,13 +69,22 @@ class _FeesContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 32),
-      children: [
-        _buildHeader(context),
-        _buildSummaryRow(context),
-        _buildInstallments(context),
-      ],
+    return RefreshIndicator(
+      color: AppColors.primaryBrown,
+      onRefresh: () async {
+        final completer = Completer<void>();
+        context.read<FeesBloc>().add(FeesRefresh(completer: completer));
+        await completer.future;
+      },
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 32),
+        children: [
+          _buildHeader(context),
+          _buildSummaryRow(context),
+          _buildInstallments(context),
+        ],
+      ),
     );
   }
 

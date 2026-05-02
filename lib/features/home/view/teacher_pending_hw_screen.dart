@@ -78,25 +78,33 @@ class _TeacherPendingHWScreenState extends State<TeacherPendingHWScreen> {
       body: _loading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primaryBrown))
-          : _entries.isEmpty
-              ? _EmptyState(subjectFilter: widget.subjectFilter)
-              : Column(
-                  children: [
-                    _SummaryStrip(
-                        assignmentCount: _entries.length,
-                        missingCount: totalMissing),
-                    Expanded(
-                      child: ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                        itemCount: _entries.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: 12),
-                        itemBuilder: (context, i) =>
-                            _PendingHWCard(entry: _entries[i]),
-                      ),
+          : RefreshIndicator(
+              color: AppColors.primaryBrown,
+              onRefresh: _loadData,
+              child: _entries.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [_EmptyState(subjectFilter: widget.subjectFilter)],
+                    )
+                  : Column(
+                      children: [
+                        _SummaryStrip(
+                            assignmentCount: _entries.length,
+                            missingCount: totalMissing),
+                        Expanded(
+                          child: ListView.separated(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                            itemCount: _entries.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, i) =>
+                                _PendingHWCard(entry: _entries[i]),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+            ),
     );
   }
 }

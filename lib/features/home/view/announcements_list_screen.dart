@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -64,8 +65,16 @@ class _AnnouncementsListScreenState extends State<AnnouncementsListScreen> {
           // Collect types that actually have items
           final presentTypes = _typeOrder.where((t) => all.any((a) => a.type == t)).toList();
 
-          return CustomScrollView(
-            slivers: [
+          return RefreshIndicator(
+            color: AppColors.primaryBrown,
+            onRefresh: () async {
+              final completer = Completer<void>();
+              context.read<HomeBloc>().add(HomeRefresh(completer: completer));
+              await completer.future;
+            },
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
               _buildAppBar(context, unreadCount, l10n),
               SliverToBoxAdapter(
                 child: _buildFilterRow(context, all, presentTypes, unreadCount, l10n),
@@ -124,7 +133,8 @@ class _AnnouncementsListScreenState extends State<AnnouncementsListScreen> {
                     ),
                   ),
                 ),
-            ],
+              ],
+            ),
           );
         },
       ),

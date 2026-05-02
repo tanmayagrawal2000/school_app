@@ -78,13 +78,18 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
       body: _loading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primaryBrown))
-          : ListView(
-              padding: const EdgeInsets.only(bottom: 32),
-              children: [
-                _buildHeader(context, _students.length, _overallPct),
-                if (atRisk.isNotEmpty) _buildAtRiskStrip(context, atRisk.length),
-                _buildStudentList(context, _students),
-              ],
+          : RefreshIndicator(
+              color: AppColors.primaryBrown,
+              onRefresh: _loadData,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 32),
+                children: [
+                  _buildHeader(context, _students.length, _overallPct),
+                  if (atRisk.isNotEmpty) _buildAtRiskStrip(context, atRisk.length),
+                  _buildStudentList(context, _students),
+                ],
+              ),
             ),
     );
   }

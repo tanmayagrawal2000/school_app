@@ -38,6 +38,48 @@ flutter gen-l10n
 
 All data is currently served from in-memory dummy data — there is no live network layer. The codebase is structured so any repository can be switched to a real API by changing a single line in `app.dart`.
 
+### Caching layer (`AppCache`)
+
+`lib/core/cache/app_cache.dart` is a TTL-based in-memory cache used by the API repository layer.
+
+- **Three TTL tiers:** `shortTtl` (5 min) for homework / attendance / announcements / reminders; `mediumTtl` (10 min) for student profiles, fees, rosters, class stats, teacher profile; `longTtl` (30 min) for timetable and teacher schedules.
+- **Cache keys** are static helpers on `AppCache` (e.g. `AppCache.homework(grade, section, studentId)`).
+- **Pull-to-refresh bypasses the cache**: every BLoC refresh handler calls `AppCache.clear()` before re-fetching. StatefulWidget screens that call repos directly call `_loadData()` directly via `RefreshIndicator.onRefresh`; their repos will re-fetch because the `RefreshIndicator` doesn't clear cache — but since those screens are teachers-only and the TTL is short, this is acceptable.
+- **Dummy repositories ignore the cache** — they always read from `DummyData`.
+
+### Pull-to-refresh pattern
+
+Every screen has a pull-down `RefreshIndicator` wrapping its scrollable content.
+
+**BLoC screens** (home, attendance, homework, results, fees, timetable, announcements, students):
+```dart
+RefreshIndicator(
+  color: AppColors.primaryBrown,
+  onRefresh: () async {
+    context.read<XBloc>().add(const XRefresh(/* params if needed */));
+    await context.read<XBloc>().stream
+        .firstWhere((s) => s is XLoaded || s is XError);
+  },
+  child: ListView(physics: const AlwaysScrollableScrollPhysics(), ...),
+)
+```
+Refresh handlers do NOT emit `XLoading` — current data stays visible while the spinner shows.
+
+**StatefulWidget screens** (class attendance, subject performance, pending HW, teacher HW, tomorrow prep):
+```dart
+RefreshIndicator(
+  color: AppColors.primaryBrown,
+  onRefresh: _loadData,  // returns Future<void>; doesn't reset _loading
+  child: ListView(physics: const AlwaysScrollableScrollPhysics(), ...),
+)
+```
+
+### Lazy loading (`StudentListScreen`)
+
+`StudentListScreen` uses client-side windowing to avoid rendering all students at once:
+- `_displayCount` starts at 20 and increments by 20 when the `ScrollController` reaches 85% scroll depth.
+- Pull-to-refresh resets `_displayCount` back to 20.
+
 ### Layer overview
 
 ```
@@ -46,6 +88,8 @@ lib/
 ├── app.dart                           # Root widget — wires repositories + BLoCs
 │
 ├── core/
+│   ├── cache/
+│   │   └── app_cache.dart             # TTL in-memory cache (shortTtl/mediumTtl/longTtl)
 │   ├── enums/
 │   │   └── user_role.dart             # UserRole enum (student, parent, teacher)
 │   ├── error/
@@ -102,7 +146,9 @@ lib/
 │           ├── api_badge_repository.dart
 │           ├── api_bus_repository.dart
 │           ├── api_homework_repository.dart
+│           ├── api_reminder_repository.dart
 │           ├── api_student_repository.dart
+│           ├── api_teacher_repository.dart
 │           └── api_timetable_repository.dart
 │
 ├── features/
@@ -190,11 +236,13 @@ RepositoryProvider<StudentRepository>(
 
 | Interface | Dummy impl | API impl | Key methods |
 |---|---|---|---|
-| `StudentRepository` | `DummyStudentRepository` | `ApiStudentRepository` | `fetchCurrentStudent`, `fetchStudents`, `fetchAttendance`, `fetchClassTeacher`, `fetchSubjectTeachers`, `fetchClassStats`, `fetchFeeInstallments` |
+| `StudentRepository` | `DummyStudentRepository` | `ApiStudentRepository` | `fetchCurrentStudent`, `fetchStudents`, `fetchAttendance`, `fetchClassTeacher`, `fetchSubjectTeachers`, `fetchClassStats`, `fetchFeeInstallments`, `fetchClassAttendanceSummary`, `fetchSubjectMarks` |
 | `AnnouncementRepository` | `DummyAnnouncementRepository` | `ApiAnnouncementRepository` | `fetchAnnouncements` |
 | `BusRepository` | `DummyBusRepository` | `ApiBusRepository` | `fetchRoutes` |
 | `TimetableRepository` | `DummyTimetableRepository` | `ApiTimetableRepository` | `fetchTimetable`, `periodsCountForDay` |
-| `HomeworkRepository` | `DummyHomeworkRepository` | `ApiHomeworkRepository` | `fetchHomework`, `saveSubmissions` |
+| `HomeworkRepository` | `DummyHomeworkRepository` | `ApiHomeworkRepository` | `fetchHomework`, `saveSubmissions`, `fetchHomeworkByTeacher`, `fetchClassRoster`, `fetchSubmittedCount`, `fetchIsSubmittedBy`, `fetchPendingSubmissions` |
+| `TeacherRepository` | `DummyTeacherRepository` | `ApiTeacherRepository` | `fetchCurrentTeacher`, `fetchClassSummaries`, `fetchSchedule` |
+| `ReminderRepository` | `DummyReminderRepository` | `ApiReminderRepository` | `fetchRemindersForDay` |
 
 ### BLoC wiring
 

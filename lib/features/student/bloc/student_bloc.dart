@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/cache/app_cache.dart';
 import '../../../data/repositories/student_repository.dart';
 import '../../../data/models/student_model.dart';
 import 'student_event.dart';
@@ -9,6 +10,7 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
 
   StudentBloc(this._repository) : super(StudentInitial()) {
     on<StudentFetchAll>(_onFetchAll);
+    on<StudentRefresh>(_onRefresh);
     on<StudentFetchDetail>(_onFetchDetail);
     on<StudentSearch>(_onSearch);
   }
@@ -22,6 +24,29 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
     emit(StudentLoading());
     _allStudents = await _repository.fetchStudents();
     emit(StudentListLoaded(students: _allStudents, filtered: _allStudents));
+  }
+
+  Future<void> _onRefresh(
+    StudentRefresh event,
+    Emitter<StudentState> emit,
+  ) async {
+    AppCache.clear();
+    _allStudents = await _repository.fetchStudents();
+    final current = state;
+    final query =
+        current is StudentListLoaded ? current.searchQuery : '';
+    final filtered = query.isEmpty
+        ? _allStudents
+        : _allStudents.where((s) {
+            final q = query.toLowerCase();
+            return s.name.toLowerCase().contains(q) ||
+                s.classGrade.contains(q) ||
+                s.admissionNo.toLowerCase().contains(q) ||
+                s.section.toLowerCase().contains(q);
+          }).toList();
+    emit(StudentListLoaded(
+        students: _allStudents, filtered: filtered, searchQuery: query));
+    event.completer?.complete();
   }
 
   Future<void> _onFetchDetail(

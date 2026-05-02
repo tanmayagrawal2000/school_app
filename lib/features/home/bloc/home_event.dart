@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 import '../../../core/enums/user_role.dart';
 import '../../../data/models/student_model.dart';
@@ -27,4 +28,9 @@ class HomeSelectChild extends HomeEvent {
   const HomeSelectChild(this.child);
   @override
   List<Object?> get props => [child];
+}
+
+class HomeRefresh extends HomeEvent {
+  final Completer<void>? completer;
+  const HomeRefresh({this.completer});
 }

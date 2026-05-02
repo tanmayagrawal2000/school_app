@@ -1,3 +1,4 @@
+import '../../../core/cache/app_cache.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../models/class_reminder_model.dart';
@@ -38,12 +39,16 @@ class ApiReminderRepository implements ReminderRepository {
   /// ```
   @override
   Future<List<ClassReminderModel>> fetchRemindersForDay(String dayName) async {
-    final json = await _client.get(
+    final key = AppCache.reminders(dayName);
+    final cached = AppCache.get<List<ClassReminderModel>>(key, AppCache.shortTtl);
+    if (cached != null) return cached;
+
+    final list = await _client.getList(
       ApiEndpoints.reminders,
       queryParams: {'day': dayName},
     );
-    return (json as List)
-        .map((e) => ClassReminderModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final result = list.map(ClassReminderModel.fromJson).toList();
+    AppCache.set(key, result);
+    return result;
   }
 }

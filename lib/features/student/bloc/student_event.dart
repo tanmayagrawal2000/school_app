@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 
 abstract class StudentEvent extends Equatable {
@@ -22,4 +23,9 @@ class StudentSearch extends StudentEvent {
   const StudentSearch(this.query);
   @override
   List<Object?> get props => [query];
+}
+
+class StudentRefresh extends StudentEvent {
+  final Completer<void>? completer;
+  const StudentRefresh({this.completer});
 }
