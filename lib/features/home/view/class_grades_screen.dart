@@ -224,13 +224,15 @@ class _SubjectRow extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      stat.subject,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                    Expanded(
+                      child: Text(
+                        stat.subject,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    const Spacer(),
                     Text(
                       '${pct.toStringAsFixed(1)}%',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(

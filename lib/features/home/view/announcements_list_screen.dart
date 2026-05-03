@@ -409,13 +409,16 @@ class _AnnouncementListCard extends StatelessWidget {
                 children: [
                   const Icon(Icons.push_pin_rounded, size: 13, color: Colors.white),
                   const SizedBox(width: 5),
-                  Text(
-                    l10n.announcementPinned,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.8,
+                  Flexible(
+                    child: Text(
+                      l10n.announcementPinned,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const Spacer(),

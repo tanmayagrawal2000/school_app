@@ -637,6 +637,7 @@ class _AttendanceMiniBar extends StatelessWidget {
           child: Text(
             label,
             style: const TextStyle(color: Colors.white70, fontSize: 11),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         Expanded(

@@ -369,14 +369,17 @@ class _BreakDivider extends StatelessWidget {
       child: Row(
         children: [
           const Expanded(child: Divider(color: AppColors.divider)),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              '${period.subject}  ·  ${period.time}',
-              style: Theme.of(context)
-                  .textTheme
-                  .labelSmall
-                  ?.copyWith(color: AppColors.textHint),
+          Flexible(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                '${period.subject}  ·  ${period.time}',
+                style: Theme.of(context)
+                    .textTheme
+                    .labelSmall
+                    ?.copyWith(color: AppColors.textHint),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ),
           const Expanded(child: Divider(color: AppColors.divider)),

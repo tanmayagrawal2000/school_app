@@ -323,14 +323,17 @@ class _PendingHWCard extends StatelessWidget {
                   const Icon(Icons.pending_outlined,
                       size: 15, color: AppColors.saffron),
                   const SizedBox(width: 6),
-                  Text(
-                    'Not submitted · ${entry.missingCount} of ${entry.totalStudents}',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: AppColors.saffron,
-                          fontWeight: FontWeight.w600,
-                        ),
+                  Expanded(
+                    child: Text(
+                      'Not submitted · ${entry.missingCount} of ${entry.totalStudents}',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: AppColors.saffron,
+                            fontWeight: FontWeight.w600,
+                          ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   Text(
                     '${entry.submittedCount} submitted',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
