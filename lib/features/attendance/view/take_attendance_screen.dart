@@ -43,7 +43,23 @@ class _TakeAttendanceScreenState extends State<TakeAttendanceScreen> {
   int get _presentCount => _attendance.values.where((v) => v).length;
   int get _absentCount => _attendance.values.where((v) => !v).length;
 
-  void _submit() {
+  void _confirmAndSubmit() {
+    final absentStudents =
+        _demoRoll.where((s) => _attendance[s.rollNo] == false).toList();
+    showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _AbsentConfirmSheet(
+        absentStudents: absentStudents,
+        totalCount: _demoRoll.length,
+      ),
+    ).then((confirmed) {
+      if (confirmed == true) _doSubmit();
+    });
+  }
+
+  void _doSubmit() {
     final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -137,7 +153,7 @@ class _TakeAttendanceScreenState extends State<TakeAttendanceScreen> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: ElevatedButton(
-            onPressed: _submit,
+            onPressed: _confirmAndSubmit,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryBrown,
               foregroundColor: Colors.white,
@@ -272,6 +288,208 @@ class _AttendanceTile extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── ABSENT CONFIRMATION BOTTOM SHEET ────────────────────────────────────────
+
+class _AbsentConfirmSheet extends StatelessWidget {
+  final List<({int rollNo, String name})> absentStudents;
+  final int totalCount;
+
+  const _AbsentConfirmSheet({
+    required this.absentStudents,
+    required this.totalCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final allPresent = absentStudents.isEmpty;
+    return DraggableScrollableSheet(
+      initialChildSize: allPresent ? 0.38 : 0.55,
+      minChildSize: 0.3,
+      maxChildSize: 0.85,
+      builder: (_, scrollController) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: allPresent
+                          ? AppColors.successLight
+                          : AppColors.errorLight,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      allPresent
+                          ? Icons.check_circle_outline
+                          : Icons.warning_amber_rounded,
+                      color: allPresent ? AppColors.success : AppColors.error,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          allPresent
+                              ? 'All Students Present'
+                              : 'Review Absent Students',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        Text(
+                          allPresent
+                              ? 'All $totalCount students are marked present.'
+                              : '${absentStudents.length} of $totalCount students will be marked absent.',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            Expanded(
+              child: allPresent
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.celebration_outlined,
+                              size: 48, color: AppColors.success),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Full attendance today!',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.separated(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      itemCount: absentStudents.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (_, i) {
+                        final s = absentStudents[i];
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppColors.errorLight,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                                color: AppColors.error.withValues(alpha: 0.25)),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundColor:
+                                    AppColors.error.withValues(alpha: 0.15),
+                                child: Text(
+                                  '${s.rollNo}',
+                                  style: const TextStyle(
+                                    color: AppColors.error,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  s.name,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                              const Icon(Icons.cancel_outlined,
+                                  size: 18, color: AppColors.error),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                  16, 8, 16, MediaQuery.of(context).viewInsets.bottom + 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textSecondary,
+                        side: const BorderSide(color: AppColors.divider),
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Go Back'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryBrown,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text(
+                        'Confirm & Submit',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
